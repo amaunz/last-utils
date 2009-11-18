@@ -1,5 +1,20 @@
 Welcome to LAST-Utils.
 
-These are LAST utilities, available from http://github.com/amaunz/last-utils/tree/master.
+These are LAST utilities, available from http://github.com/amaunz/last-utils/tree/master. Requires ruby 1.8 and gem (plugin) "hpricot".
+LAST is available from http://github.com/amaunz/last/tree/master.
+
+
+
+Two modi are available: conversion LAST->SMARTS and instantiation SMARTS/SMILES. Examples:
+
+Mine LAST descriptors and convert output to SMARTS (see LAST README file how to use the fminer frontend binary for LAST):
+./fminer -f14 -r ../cpdbdata/salmonella_mutagenicity/salmonella_mutagenicity_alt.smi ../cpdbdata/salmonella_mutagenicity/salmonella_mutagenicity_alt.class | ../last-utils/last-utils.rb 1 > salm-last.smarts
+
+Find instantiations of molecules in a .smi file using the last descriptors we just mined:
+../last-utils/last-utils.rb 2 ../cpdbdata/salmonella_mutagenicity/salmonella_mutagenicity_alt.smi < salm-last.smarts
+
+
+
+For more information see USAGE file or run last-utils.rb without arguments
 
 Andreas Maunz, 2009

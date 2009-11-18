@@ -253,7 +253,7 @@ def smarts(dom)
 end
 
 
-def match (smiles, smarts)
+def match (smiles, smarts, verbose=true)
     c=OpenBabel::OBConversion.new
     c.set_in_format 'smi'
     m=OpenBabel::OBMol.new
@@ -265,37 +265,83 @@ def match (smiles, smarts)
         puts "Error! Smarts pattern invalid."
         exit
     end
-    p.match(m,true)
-    
-    p.match(m)
-    hits = p.get_umap_list
-    print "Found #{hits.size} instances of the SMARTS pattern '#{smarts}' in the SMILES string '#{smiles}'."
-    if hits.size>0
-        puts " Here are the atom indices:"
-    else
-        print "\n"
-    end
-    hits.each_with_index do |hit, index|
-        print "  Hit #{index}: [ "
-        hit.each do |atom_index|
-            print "#{atom_index} "
+   
+    if verbose  
+        p.match(m)
+        hits = p.get_umap_list
+        print "Found #{hits.size} instances of the SMARTS pattern '#{smarts}' in the SMILES string '#{smiles}'."
+        if hits.size>0
+            puts " Here are the atom indices:"
+        else
+            print "\n"
         end
-        puts "]"
-    end		
-    
+        hits.each_with_index do |hit, index|
+            print "  Hit #{index}: [ "
+            hit.each do |atom_index|
+                print "#{atom_index} "
+            end
+            puts "]"
+        end		
+    end
+
+    p.match(m,true)
+end
+
+def match_file (file)
+    smarts = STDIN.read
+    File.open(file, "r") do |infile|
+        while (line = infile.gets)
+            result=""
+            result << "#{line.split[0]} "
+            smarts.each do |s|
+                result << "#{s.split[0]}," unless !match(line.split[1],s.split[1],false)
+            end
+            result.chop!
+            puts "#{result}\n"
+        end
+    end
 end
 
 # Main
 STDOUT.sync = true
-dom = read
-smarts(dom)
+
+status=false
+if $*.size==0 || $*.size>1
+    status=true
+end
+
+case $*[0]
+when '1' 
+    if !status
+        dom = read
+        smarts(dom)
+    end
+when '2'
+    if status && $*.size==2
+        status=false
+        match_file($*[1])
+    end
+when '3'
+    demo
+else
+    status=true
+end
+
+if status
+    puts "Usage: #{$0} cmd [/path/to/smifile.smi] < file" 
+    puts "  cmd=1 : convert GraphML to SMARTS"
+    puts "  cmd=2 : match SMARTS to SMILES file 'smifile.smi'"
+    puts "  Output goes to $stdout."
+    exit
+end
+
 
 
 
 # Demonstrates different SMARTS patterns
 def demo
-    puts
     # This pattern is equivalent to  [#7][#7][#6] :(
+    puts
     match("NNC",                "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
     match("N(=O)NC",            "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
     match("N(=O)NCN",           "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
@@ -303,8 +349,8 @@ def demo
     match("N(=O)NC=O",          "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
     match("N(=O)NC(N)=O",       "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (yes)
 
-    puts
     # This pattern is better (seems to demand a branch), but actually demands no branch since no explict degree is forced, which allows "folding" :(
+    puts
     match("NNC",            "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (no)
     match("NN(C)C",         "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (no)
     match("NN(C)C(N)",      "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (yes)
@@ -312,8 +358,16 @@ def demo
     match("NN(CC)(C)C(=O)", "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (yes)
     match("NNC(=O)",        "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (no)
 
-    puts
     # This enhanced pattern enforces 1-step environments around the current node (f) and requires at least one branch :)
+    # Recursive definition: 
+    # p:
+    # ------------------
+    #          t: #int:n
+    #      local: [t:self](p:branch)([t:back])[t:forw]
+    # branchnode: [t:self;$(local:env),...](~*)
+    #       node: [t]
+    # ------------------
+    puts
     match("NNC",                     "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])](~*)[#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])](~*)") # no (no)
     match("NN(C)C",                  "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])](~*)[#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])](~*)") # no (no)
     match("NNC(N)",                  "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])](~*)[#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])](~*)") # no (no)

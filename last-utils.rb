@@ -12,7 +12,7 @@ class LUGraph
     @edges = edges
   end
 
-  def to_smarts(backw,f,opt)
+  def to_smarts(backw_e,backw_n,f,opt)
 
       mand_branches=0
       opt_branches = @edges[f].size
@@ -50,19 +50,23 @@ class LUGraph
 
                   print "("                   # branch
                   e.to_smarts                 # 
-                  to_smarts(f,t,e.opt_e)      # 
+                  to_smarts(e,f,t,e.opt_e)      # 
                   print ")"                   # 
-                  if backw!=f
+                  if backw_n!=f && !backw_e.nil?
                       print "(" unless mand_branches==0   # backw
+                      backw_e.to_smarts
                       print "["                           # backw
-                      @nodes[backw].to_smarts             # 
+                      @nodes[backw_n].to_smarts           # 
                       print "]"                           # 
                       print ")" unless mand_branches==0   # 
                   end
-                  if mand_branches>0
-                      print "["               # forw
-                      @nodes[t].to_smarts     # 
-                      print "]"               # 
+                  for i in 0..mand_t.size-1
+                      print "(" unless i==mand_t.size-1
+                      mand_e[i].to_smarts
+                      print "["
+                      @nodes[mand_t[i]].to_smarts
+                      print "]"
+                      print ")" unless i==mand_t.size-1
                   end
               print ")"
               print "," unless i==opt_t.size-1
@@ -89,7 +93,7 @@ class LUGraph
           e = mand_e[i]
           print "(" unless i==mand_t.size-1
           e.to_smarts
-          to_smarts(f,t,e.opt_e)
+          to_smarts(e,f,t,e.opt_e)
           print ")" unless i==mand_t.size-1
       end
 
@@ -247,7 +251,7 @@ end
 def smarts(dom)
     dom[:grps].sort{|a,b| a[0]<=>b[0]}.each do |id, g| 
         print "#{id}\t"
-        g.to_smarts(0,0,0)
+        g.to_smarts(nil,0,0,0)
         print "\n"
     end
 end
@@ -359,14 +363,7 @@ def demo
     match("NNC(=O)",        "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (no)
 
     # This enhanced pattern enforces 1-step environments around the current node (f) and requires at least one branch :)
-    # Recursive definition: 
-    # p:
-    # ------------------
-    #          t: #int:n
-    #      local: [t:self](p:branch)([t:back])[t:forw]
-    # branchnode: [t:self;$(local:env),...](~*)
-    #       node: [t]
-    # ------------------
+    # See README for the recursive definition: 
     puts
     match("NNC",                     "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])](~*)[#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])](~*)") # no (no)
     match("NN(C)C",                  "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])](~*)[#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])](~*)") # no (no)

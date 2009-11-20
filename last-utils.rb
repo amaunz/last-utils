@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require('openbabel')
-#include OpenBabel   <= may be used for direct access to OB namespace, i.e. w/o "OpenBabel::". Below, I want namespaces for clarity.
+#include OpenBabel   <= may be used for direct access to OB namespace, i.e. w/o "OpenBabel::". Below, I use namespaces for clarity.
 
 %w[pp rubygems hpricot].each { |x| require x }
 
@@ -12,6 +12,7 @@ class LUGraph
     @edges = edges
   end
 
+  # LAST-SMARTS
   def to_smarts(backw_e,backw_n,f,opt)
 
       mand_branches=0
@@ -44,49 +45,53 @@ class LUGraph
               t = opt_t[i]
               e = opt_e[i]
               print "$("
+
                   print "["                   # self
                   @nodes[f].to_smarts         # 
                   print "]"                   # 
 
                   print "("                   # branch
                   e.to_smarts                 # 
-                  to_smarts(e,f,t,e.opt_e)      # 
+                  to_smarts(e,f,t,e.opt_e)    # recursive: LAST-SMARTS
                   print ")"                   # 
-                  if backw_n!=f && !backw_e.nil?
-                      print "(" unless mand_branches==0   # backw
-                      backw_e.to_smarts
-                      print "["                           # backw
+
+                  if backw_n!=f && !backw_e.nil?          # backw
+                      print "(" unless mand_branches==0   #
+                      backw_e.to_smarts                   #
+                      print "["                           #
                       @nodes[backw_n].to_smarts           # 
                       print "]"                           # 
                       print ")" unless mand_branches==0   # 
                   end
-                  for i in 0..mand_t.size-1
-                      print "(" unless i==mand_t.size-1
-                      mand_e[i].to_smarts
-                      print "["
-                      @nodes[mand_t[i]].to_smarts
-                      print "]"
-                      print ")" unless i==mand_t.size-1
+
+                  for j in 0..mand_t.size-1               # forw
+                      print "(" unless j==mand_t.size-1   #
+                      mand_e[j].to_smarts                 #
+                      print "["                           #
+                      @nodes[mand_t[j]].to_smarts         #
+                      print "]"                           #
+                      print ")" unless j==mand_t.size-1   #
                   end
+
               print ")"
               print "," unless i==opt_t.size-1
           end
-      else
-          # 2) Uncomment next block to make single optional edges mandatory (c.f. not. 17.11.09)
-          #if opt_branches==1
-          #    @edges[f].each do |t,e|
-          #        if !mand_t.include?(t)
-          #            print "("
-          #            e.to_smarts
-          #            to_smarts(t,e.opt_e)
-          #            print ")"
-          #        end
-          #    end
-          #end
-          # 2) end
       end
       print "]"
       print "(~*)" unless !do_branch
+
+
+      # 2) Uncomment next block to make single optional edges mandatory (c.f. not. 17.11.09)
+      if opt_branches==1
+          t = opt_t[0]
+          e = opt_e[0]
+          print "(" unless mand_branches==0
+          e.to_smarts
+          to_smarts(e,f,t,e.opt_e)
+          print ")" unless mand_branches==0
+      end
+      # 2) end
+
 
       for i in 0..mand_t.size-1
           t = mand_t[i]
@@ -99,28 +104,6 @@ class LUGraph
 
   end
 
-
-#        @edges[f].each do |t,e|
-#
-#                # handle deleted
-#                if (e.del_e == 0)
-#
-#                    # handle opt open 
-#                    opt_flag=false
-#                    (opt_flag=true; print "["; opt=e.opt_e) unless e.opt_e<=opt 
-#                    print "(" unless @edges[f].size==1
-#
-#                    # recurse
-#                    e.to_smarts
-#                    to_smarts(t,opt)
-#                    print ")" unless @edges[f].size==1
-#
-#                    # handle opt close
-#                    print "]" unless !opt_flag
-#
-#                end # end handle deleted
-#            end
-#        end
 end
 
 class LUNode

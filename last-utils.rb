@@ -33,6 +33,15 @@ class LUGraph
           end
       end
 
+      if opt_branches != opt_t.size
+        puts "Error! O: #{opt_branches} #{opt_t.size}"
+        exit
+      end
+      if mand_branches != mand_t.size
+        puts "Error! M: #{mand_branches} #{mand_t.size}"
+        exit
+      end
+
       print "["
       @nodes[f].to_smarts
       do_branch=(opt_branches>1)
@@ -41,7 +50,7 @@ class LUGraph
           # print "$(" ; @nodes[f].to_smarts ; print ")," 
           # 1) end
           print ";"
-          for i in 0..opt_t.size-1
+          for i in 0..opt_branches-1
               t = opt_t[i]
               e = opt_e[i]
               print "$("
@@ -59,22 +68,22 @@ class LUGraph
                       print "(" unless mand_branches==0   #
                       backw_e.to_smarts                   #
                       print "["                           #
-                      @nodes[backw_n].to_smarts           # 
-                      print "]"                           # 
-                      print ")" unless mand_branches==0   # 
+                      @nodes[backw_n].to_smarts           #
+                      print "]"                           #
+                      print ")" unless mand_branches==0   #
                   end
 
-                  for j in 0..mand_t.size-1               # forw
-                      print "(" unless j==mand_t.size-1   #
-                      mand_e[j].to_smarts                 #
-                      print "["                           #
-                      @nodes[mand_t[j]].to_smarts         #
-                      print "]"                           #
-                      print ")" unless j==mand_t.size-1   #
+                  for j in 0..mand_branches-1               # forw
+                      print "(" unless j==mand_branches-1   #
+                      mand_e[j].to_smarts                   #
+                      print "["                             #
+                      @nodes[mand_t[j]].to_smarts           #
+                      print "]"                             #
+                      print ")" unless j==mand_branches-1   #
                   end
 
               print ")"
-              print "," unless i==opt_t.size-1
+              print "," unless i==opt_branches-1
           end
       end
       print "]"
@@ -82,7 +91,7 @@ class LUGraph
 
 
       # 2) Uncomment next block to make single optional edges mandatory (c.f. not. 17.11.09)
-      if opt_branches==1
+      if !do_branch && opt_branches==1
           t = opt_t[0]
           e = opt_e[0]
           print "(" unless mand_branches==0
@@ -93,13 +102,13 @@ class LUGraph
       # 2) end
 
 
-      for i in 0..mand_t.size-1
+      for i in 0..mand_branches-1
           t = mand_t[i]
           e = mand_e[i]
-          print "(" unless i==mand_t.size-1
+          print "(" unless i==mand_branches-1
           e.to_smarts
           to_smarts(e,f,t,e.opt_e)
-          print ")" unless i==mand_t.size-1
+          print ")" unless i==mand_branches-1
       end
 
   end
@@ -289,6 +298,44 @@ def match_file (file)
     end
 end
 
+
+# Demonstrates different SMARTS patterns
+def demo
+    # This pattern is equivalent to  [#7][#7][#6] :(
+    puts
+    match("NNC",                "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
+    match("N(=O)NC",            "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
+    match("N(=O)NCN",           "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
+    match("N(=O)NC(N)N",        "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
+    match("N(=O)NC=O",          "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
+    match("N(=O)NC(N)=O",       "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (yes)
+
+    # This pattern is better (seems to demand a branch), but actually demands no branch since no explict degree is forced, which allows "folding" :(
+    puts
+    match("NNC",            "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (no)
+    match("NN(C)C",         "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (no)
+    match("NN(C)C(N)",      "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (yes)
+    match("NN(C)C(=O)",     "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (yes)
+    match("NN(CC)(C)C(=O)", "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (yes)
+    match("NNC(=O)",        "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (no)
+
+    # This enhanced pattern enforces 1-step environments around the current node (f) and requires at least one branch :)
+    # See README for the recursive definition: 
+    puts
+    match("NNC",                     "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # no (no)
+    match("NN(C)C",                  "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # no (no)
+    match("NNC(N)",                  "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # no (no)
+    match("NN(C)C(=N)",              "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # yes (yes)
+    match("NN(C)C-N",                "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") 
+    match("NN(CC)(C)C(N)",           "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # yes (yes)
+    match("NN(CC)(C)C(N)(=O)",       "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # yes (yes)
+    match("NN(CC)C(=C)",             "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # no (no)
+    match("NN(CN)C(=N)",             "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # yes (yes) <- two embeddings is correct
+    match("NN(N)C(=N)",              "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # no (no)
+end
+
+
+
 # Main
 STDOUT.sync = true
 
@@ -320,41 +367,4 @@ if status
     puts "  cmd=2 : match SMARTS to SMILES file 'smifile.smi'"
     puts "  Output goes to $stdout."
     exit
-end
-
-
-
-
-# Demonstrates different SMARTS patterns
-def demo
-    # This pattern is equivalent to  [#7][#7][#6] :(
-    puts
-    match("NNC",                "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
-    match("N(=O)NC",            "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
-    match("N(=O)NCN",           "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
-    match("N(=O)NC(N)N",        "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
-    match("N(=O)NC=O",          "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
-    match("N(=O)NC(N)=O",       "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (yes)
-
-    # This pattern is better (seems to demand a branch), but actually demands no branch since no explict degree is forced, which allows "folding" :(
-    puts
-    match("NNC",            "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (no)
-    match("NN(C)C",         "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (no)
-    match("NN(C)C(N)",      "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (yes)
-    match("NN(C)C(=O)",     "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (yes)
-    match("NN(CC)(C)C(=O)", "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (yes)
-    match("NNC(=O)",        "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (no)
-
-    # This enhanced pattern enforces 1-step environments around the current node (f) and requires at least one branch :)
-    # See README for the recursive definition: 
-    puts
-    match("NNC",                     "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])](~*)[#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])](~*)") # no (no)
-    match("NN(C)C",                  "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])](~*)[#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])](~*)") # no (no)
-    match("NNC(N)",                  "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])](~*)[#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])](~*)") # no (no)
-    match("NN(C)C(=N)",              "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])](~*)[#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])](~*)") # yes (yes)
-    match("NN(CC)(C)C(N)",           "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])](~*)[#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])](~*)") # yes (yes)
-    match("NN(CC)(C)C(N)(=O)",       "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])](~*)[#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])](~*)") # yes (yes)
-    match("NN(CC)C(=C)",             "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])](~*)[#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])](~*)") # no (no)
-    match("NN(CN)C(=N)",             "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])](~*)[#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])](~*)") # yes (yes) <- two embeddings is correct
-    match("NN(N)C(=N)",              "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])](~*)[#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])](~*)") # no (no)
 end

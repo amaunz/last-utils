@@ -2,6 +2,7 @@
 
 require('openbabel')
 #include OpenBabel   <= may be used for direct access to OB namespace, i.e. w/o "OpenBabel::". Below, I use namespaces for clarity.
+require('set')
 
 %w[pp rubygems hpricot].each { |x| require x }
 
@@ -17,6 +18,7 @@ class LUGraph
 
       mand_branches=0
       opt_branches = @edges[f].size
+      different_opts = {}
       mand_t = []
       mand_e = []
       opt_t = []
@@ -32,6 +34,15 @@ class LUGraph
               opt_e << e
           end
       end
+      opt_e.each do |e|
+          if different_opts.has_key?(e.opt_e) 
+            different_opts[e.opt_e]+=1
+          else
+            different_opts[e.opt_e]=1
+          end
+      end
+      nr_b = 0
+      nr_b = different_opts.values.max unless different_opts.size == 0
 
       if opt_branches != opt_t.size
         puts "Error! O: #{opt_branches} #{opt_t.size}"
@@ -39,6 +50,10 @@ class LUGraph
       end
       if mand_branches != mand_t.size
         puts "Error! M: #{mand_branches} #{mand_t.size}"
+        exit
+      end
+      if (((nr_b == 0) && (opt_branches > 0)) || (nr_b > opt_branches))
+        puts "Error!"
         exit
       end
 
@@ -87,7 +102,9 @@ class LUGraph
           end
       end
       print "]"
-      print "(~*)" unless !do_branch
+      for i in 1..nr_b
+        print "(~*)" unless !do_branch
+      end
 
 
       # 2) Uncomment next block to make single optional edges mandatory (c.f. not. 17.11.09)

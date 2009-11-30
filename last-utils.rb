@@ -14,7 +14,10 @@ class LUGraph
   end
 
   # LAST-SMARTS
-  def to_smarts(backw_e,backw_n,f,opt)
+  #   to_smarts(    nil,      0,0,  0,   1)  <== DEFAULT
+  def to_smarts(backw_e,backw_n,f,opt,init)
+
+      opt = @edges[0][1].weight unless !init # initialize opt level to weight of first edge
 
       mand_branches=0
       opt_branches = @edges[f].size
@@ -24,21 +27,25 @@ class LUGraph
       opt_t = []
       opt_e = []
       @edges[f].each do |t,e|
-          if e.opt_e==0 || (e.opt_e==opt)
-              mand_branches+=1
-              opt_branches-=1
-              mand_t << t
-              mand_e << e
+          if e.del == 0
+              if e.weight==opt
+                  mand_branches+=1
+                  opt_branches-=1
+                  mand_t << t
+                  mand_e << e
+              else
+                  opt_t << t
+                  opt_e << e
+              end
           else
-              opt_t << t
-              opt_e << e
+              opt_branches-=1
           end
       end
       opt_e.each do |e|
-          if different_opts.has_key?(e.opt_e) 
-            different_opts[e.opt_e]+=1
+          if different_opts.has_key?(e.weight)
+            different_opts[e.weight]+=1
           else
-            different_opts[e.opt_e]=1
+            different_opts[e.weight]=1
           end
       end
       nr_b = 0
@@ -76,7 +83,7 @@ class LUGraph
 
                   print "("                   # branch
                   e.to_smarts                 # 
-                  to_smarts(e,f,t,e.opt_e)    # recursive: LAST-SMARTS
+                  to_smarts(e,f,t,e.weight,0)    # recursive: LAST-SMARTS
                   print ")"                   # 
 
                   if backw_n!=f && !backw_e.nil?          # backw
@@ -113,7 +120,7 @@ class LUGraph
           e = opt_e[0]
           print "(" unless mand_branches==0
           e.to_smarts
-          to_smarts(e,f,t,e.opt_e)
+          to_smarts(e,f,t,e.weight,0)
           print ")" unless mand_branches==0
       end
       # 2) end
@@ -124,7 +131,7 @@ class LUGraph
           e = mand_e[i]
           print "(" unless i==mand_branches-1
           e.to_smarts
-          to_smarts(e,f,t,e.opt_e)
+          to_smarts(e,f,t,e.weight,0)
           print ")" unless i==mand_branches-1
       end
 
@@ -133,7 +140,7 @@ class LUGraph
 end
 
 class LUNode
-  attr_accessor :id, :lab_n, :weight_n, :del_n, :opt_n
+  attr_accessor :id, :lab_n
   def initialize(id)
     @id = id
   end
@@ -151,13 +158,13 @@ class LUNode
 end
 
 class LUEdge
-  attr_accessor :source, :target, :lab_e, :weight_e, :del_e, :opt_e
+  attr_accessor :source, :target, :lab_e, :weight, :del, :opt
   def initialize(source, target)
     @source = source
     @target = target
   end
   def to_s
-    puts "'#{@source} #{@target} #{@lab_e} #{@weight_e} #{@del_e} #{@opt_e}'"
+    puts "'#{@source} #{@target} #{@lab_e} #{@weight} #{@del} #{@opt}'"
   end
   def to_smarts
      l_e = @lab_e.split
@@ -216,9 +223,6 @@ def read
                 slot = data.inner_html
                 case data.attributes['key']
                     when 'lab_n' then node.lab_n = slot
-                    when 'weight_n' then node.weight_n = slot.to_i
-                    when 'del_n' then node.del_n = slot.to_i
-                    when 'opt_n' then node.opt_n = slot.to_i
                     else nil
                 end
             end
@@ -233,9 +237,9 @@ def read
                 slot = data.inner_html
                 case data.attributes['key']
                     when 'lab_e' then edge.lab_e = slot
-                    when 'weight_e' then edge.weight_e = slot.to_i
-                    when 'del_e' then edge.del_e = slot.to_i
-                    when 'opt_e' then edge.opt_e = slot.to_i
+                    when 'weight' then edge.weight = slot.to_i
+                    when 'del' then edge.del = slot.to_i
+                    when 'opt' then edge.opt = slot.to_i
                     else nil
                 end
             end
@@ -260,7 +264,7 @@ end
 def smarts(dom)
     dom[:grps].sort{|a,b| a[0]<=>b[0]}.each do |id, g| 
         print "#{id}\t"
-        g.to_smarts(nil,0,0,0)
+        g.to_smarts(nil,0,0,0,1)
         print "\n"
     end
 end

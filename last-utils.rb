@@ -300,16 +300,16 @@ end
 
 def match_file (file)
     smarts = STDIN.read
-    File.open(file, "r") do |infile|
-        while (line = infile.gets)
-            result=""
-            result << "#{line.split[0]} "
-            smarts.each do |s|
-                result << "#{s.split[0]}," unless !match(line.split[1],s.split[1],false)
+    smarts.each do |s|
+        result=""
+        result << "#{s.split[1]}\t[ "
+        File.open(file, "r") do |infile|
+            while (line = infile.gets)
+                result << "#{line.split[0]} " unless !match(line.split[1],s.split[1],false)
             end
-            result.chop!
-            puts "#{result}\n"
         end
+        result << "]"
+        puts "#{result}\n"
     end
 end
 

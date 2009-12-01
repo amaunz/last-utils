@@ -47,7 +47,7 @@ class LUGraph
           end
       end
       nr_b = 0
-      nr_b = different_opts.max[1] unless different_opts.size == 0 # nr mandatory branches = nr of branches at highest weight level
+      nr_b = different_opts.max[1] unless different_opts.size == 0 
 
       if opt_branches != opt_t.size
         puts "Error! O: #{opt_branches} #{opt_t.size}"
@@ -302,7 +302,7 @@ def match_file (file)
     smarts = STDIN.read
     smarts.each do |s|
         result=""
-        result << "#{s.split[1]}\t[ "
+        result << "\"#{s.split[1]}\"\t[ "
         File.open(file, "r") do |infile|
             while (line = infile.gets)
                 result << "#{line.split[0]} " unless !match(line.split[1],s.split[1],false)

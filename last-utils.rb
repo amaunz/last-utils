@@ -16,9 +16,7 @@ class LUGraph
   # LAST-SMARTS
   #   to_smarts(    nil,      0,0,  0,   1)  <== DEFAULT
   def to_smarts(backw_e,backw_n,f,opt,init)
-
       opt = @edges[0][1].weight unless !init # initialize opt level to weight of first edge
-
       mand_branches=0
       opt_branches = @edges[f].size
       different_opts = {}
@@ -28,7 +26,7 @@ class LUGraph
       opt_e = []
       @edges[f].each do |t,e|
           if e.del == 0
-              if e.weight==opt
+              if e.weight >= opt
                   mand_branches+=1
                   opt_branches-=1
                   mand_t << t
@@ -49,7 +47,7 @@ class LUGraph
           end
       end
       nr_b = 0
-      nr_b = different_opts.values.max unless different_opts.size == 0
+      nr_b = different_opts.max[1] unless different_opts.size == 0 # nr mandatory branches = nr of branches at highest weight level
 
       if opt_branches != opt_t.size
         puts "Error! O: #{opt_branches} #{opt_t.size}"
@@ -113,7 +111,6 @@ class LUGraph
         print "(~*)" unless !do_branch
       end
 
-
       # 2) Uncomment next block to make single optional edges mandatory (c.f. not. 17.11.09)
       if !do_branch && opt_branches==1
           t = opt_t[0]
@@ -125,7 +122,6 @@ class LUGraph
       end
       # 2) end
 
-
       for i in 0..mand_branches-1
           t = mand_t[i]
           e = mand_e[i]
@@ -134,9 +130,7 @@ class LUGraph
           to_smarts(e,f,t,e.weight,0)
           print ")" unless i==mand_branches-1
       end
-
   end
-
 end
 
 class LUNode

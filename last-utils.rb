@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby
+#!/usr/bin/ruby1.8
 
 require('openbabel')
 #include OpenBabel   <= may be used for direct access to OB namespace, i.e. w/o "OpenBabel::". Below, I use namespaces for clarity.
@@ -15,7 +15,7 @@ class LUGraph
 
   # LAST-SMARTS
   #   to_smarts(    nil,      0,0,  0,   1)  <== DEFAULT
-  def to_smarts(backw_e,backw_n,f,opt,init)
+  def to_smarts(backw_e,backw_n,f,opt,init,mode)
       opt = @edges[0][1].weight unless !init # initialize opt level to weight of first edge
       mand_branches=0
       opt_branches = @edges[f].size
@@ -25,8 +25,9 @@ class LUGraph
       opt_t = []
       opt_e = []
       @edges[f].each do |t,e|
-          if e.del == 0
-              if e.weight >= opt
+          if ((mode == 'ade' || mode == 'nde' || mode == 'ode') || e.del == 0)
+              # Comment 'if / else' out for nop variant
+              if (mode == 'nop' || mode == 'ode' || e.weight >= opt)
                   mand_branches+=1
                   opt_branches-=1
                   mand_t << t
@@ -47,7 +48,11 @@ class LUGraph
           end
       end
       nr_b = 0
-      nr_b = different_opts.max[1] unless different_opts.size == 0 
+      if (mode == 'nla' || mode == 'nde')
+        nr_b = different_opts.max[1] unless different_opts.size == 0 # EITHER nla variant (DEFAULT) OR
+      elsif (mode == 'ala' || mode == 'ade')
+        nr_b = different_opts.values.max unless different_opts.size == 0 # ala variant
+      end
 
       if opt_branches != opt_t.size
         puts "Error! O: #{opt_branches} #{opt_t.size}"
@@ -81,7 +86,7 @@ class LUGraph
 
                   print "("                   # branch
                   e.to_smarts                 # 
-                  to_smarts(e,f,t,e.weight,0)    # recursive: LAST-SMARTS
+                  to_smarts(e,f,t,e.weight,0,mode)    # recursive: LAST-SMARTS
                   print ")"                   # 
 
                   if backw_n!=f && !backw_e.nil?          # backw
@@ -117,7 +122,7 @@ class LUGraph
           e = opt_e[0]
           print "(" unless mand_branches==0
           e.to_smarts
-          to_smarts(e,f,t,e.weight,0)
+          to_smarts(e,f,t,e.weight,0,mode)
           print ")" unless mand_branches==0
       end
       # 2) end
@@ -127,7 +132,7 @@ class LUGraph
           e = mand_e[i]
           print "(" unless i==mand_branches-1
           e.to_smarts
-          to_smarts(e,f,t,e.weight,0)
+          to_smarts(e,f,t,e.weight,0,mode)
           print ")" unless i==mand_branches-1
       end
   end
@@ -255,10 +260,10 @@ def read
     return {:grps => graphs, :acts => activities, :hops => hops}
 end
 
-def smarts(dom)
+def smarts(dom, mode)
     dom[:grps].sort{|a,b| a[0]<=>b[0]}.each do |id, g| 
         print "#{id}\t"
-        g.to_smarts(nil,0,0,0,1)
+        g.to_smarts(nil,0,0,0,1,mode)
         print "\n"
     end
 end
@@ -299,7 +304,7 @@ def match (smiles, smarts, verbose=true)
 end
 
 def match_file (file)
-    smarts = STDIN.read
+    smarts = STDIN.readlines
     smarts.each do |s|
         result=""
         result << "\"#{s.split[1]}\"\t[ "
@@ -354,8 +359,9 @@ end
 # Main
 STDOUT.sync = true
 
+
 status=false
-if $*.size==0 || $*.size>1
+if $*.size==0 || $*.size>2
     status=true
 end
 
@@ -363,11 +369,10 @@ case $*[0]
 when '1' 
     if !status
         dom = read
-        smarts(dom)
+        smarts(dom, $*[1])
     end
 when '2'
-    if status && $*.size==2
-        status=false
+    if !status
         match_file($*[1])
     end
 when '3'

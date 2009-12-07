@@ -305,17 +305,55 @@ end
 
 def match_file (file)
     smarts = STDIN.readlines
+
+    # build act hash
+    act_hash={}
+    $stderr.puts "Building activity database..."
+    File.open(file.sub(/.smi/, '.class')) do |cfile| # class
+        while (line = cfile.gets)
+            line_arr = line.split
+            act_hash[line_arr.first]=line_arr.last
+        end
+    end   
+
+    smi_arr=[]
+    $stderr.puts "Reading instances..."
+    File.open(file, "r") do |infile| # smi
+        while (line = infile.gets)
+            smi_arr << line
+        end
+    end
+
+
+    $stderr.print "Processing smarts"
     smarts.each do |s|
-        result=""
-        result << "\"#{s.split[1]}\"\t[ "
-        File.open(file, "r") do |infile|
-            while (line = infile.gets)
-                result << "#{line.split[0]} " unless !match(line.split[1],s.split[1],false)
+        $stderr.print "."
+        result_hash={}
+        string_result=""
+        
+        smi_arr.each do |smi|
+            result_hash[smi.split.first] = act_hash[smi.split.first] unless !match(smi.split.last,s.split.last,false)
+            #$stderr.print "#{result_hash.size} "
+        end
+
+        string_actives = " "
+        string_inactives = " "
+
+        result_hash.each do |id, act|
+            if act == "1"
+                string_actives << id << " "
+            elsif act == "0"
+                string_inactives << id << " "
             end
         end
-        result << "]"
-        puts "#{result}\n"
+
+        string_result << "\"#{s.split[1]}\"\t["
+        string_result << string_actives << "] ["
+        string_result << string_inactives << "]"
+
+        puts "#{string_result}"
     end
+    $stderr.puts
 end
 
 

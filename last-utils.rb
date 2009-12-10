@@ -14,7 +14,7 @@ class LUGraph
   end
 
   # LAST-SMARTS
-  #   to_smarts(    nil,      0,0,  0,   1)  <== DEFAULT
+  #   to_smarts(    nil,      0,0,  0,   1,<pa>)  <== DEFAULT
   def to_smarts(backw_e,backw_n,f,opt,init,mode)
       opt = @edges[0][1].weight unless !init # initialize opt level to weight of first edge
       mand_branches=0
@@ -25,8 +25,7 @@ class LUGraph
       opt_t = []
       opt_e = []
       @edges[f].each do |t,e|
-          if ((mode == 'ade' || mode == 'nde' || mode == 'ode') || e.del == 0)
-              # Comment 'if / else' out for nop variant
+          if ((mode == 'ade' || mode == 'nde' || mode == 'ode') || e.del == 0 || to == 1)
               if (mode == 'nop' || mode == 'ode' || e.weight >= opt)
                   mand_branches+=1
                   opt_branches-=1
@@ -263,6 +262,7 @@ end
 def smarts(dom, mode)
     dom[:grps].sort{|a,b| a[0]<=>b[0]}.each do |id, g| 
         print "#{id}\t"
+        print "#{dom[:acts][id]}\t"
         g.to_smarts(nil,0,0,0,1,mode)
         print "\n"
     end
@@ -325,9 +325,8 @@ def match_file (file)
     end
 
 
-    $stderr.print "Processing smarts"
+    $stderr.print "Processing smarts... "
     smarts.each do |s|
-        $stderr.print "."
         result_hash={}
         string_result=""
         
@@ -347,11 +346,14 @@ def match_file (file)
             end
         end
 
-        string_result << "\"#{s.split[1]}\"\t["
+        string_result << "\"#{s.split.last}\"\t["
         string_result << string_actives << "] ["
         string_result << string_inactives << "]"
 
         puts "#{string_result}"
+        nom = string_actives.split.size
+        den = (string_actives.split.size + string_inactives.split.size)
+        $stderr.print "#{nom}/#{den}(#{s.split[1]}) "
     end
     $stderr.puts
 end
@@ -420,9 +422,12 @@ else
 end
 
 if status
-    puts "Usage: #{$0} cmd [/path/to/smifile.smi] < file" 
-    puts "  cmd=1 : convert GraphML to SMARTS"
-    puts "  cmd=2 : match SMARTS to SMILES file 'smifile.smi'"
-    puts "  Output goes to $stdout."
+    puts "Usage: #{$0} 1 [ ala | ade | nla | nde | nop | ode ] < /path/to/graphmlfile.graphml > /path/to/smartsfile.smarts" 
+    puts "       #{$0} 2 /path/to/smifile.smi < /path/to/smartsfile.smarts > /path/to/lastpmfile.lastpm" 
+    puts "       cmd=1 : convert GraphML to SMARTS."
+    puts "           ala (ade) : All level max opt (no deletions)."
+    puts "           nla (nde) : Next level opt (no deletions)."
+    puts "           nop (ode) : No opt (no deletions)."
+    puts "       cmd=2 : match SMARTS to SMILES file and create LASTPM file."
     exit
 end

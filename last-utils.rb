@@ -25,7 +25,7 @@ class LUGraph
       opt_t = []
       opt_e = []
       @edges[f].each do |t,e|
-          if ((mode == 'ade' || mode == 'nde' || mode == 'ode') || e.del == 0 || t == 1)
+          if ((mode == 'ade' || mode == 'nde' || mode == 'ode') || e.del == 0)
               if (mode == 'nop' || mode == 'ode' || e.weight >= opt)
                   mand_branches+=1
                   opt_branches-=1
@@ -261,10 +261,12 @@ end
 
 def smarts(dom, mode)
     dom[:grps].sort{|a,b| a[0]<=>b[0]}.each do |id, g| 
-        print "#{id}\t"
-        print "#{dom[:acts][id]}\t"
-        g.to_smarts(nil,0,0,0,1,mode)
-        print "\n"
+        if g.edges[0][1].del == 0
+            print "#{id}\t"
+            print "#{dom[:acts][id]}\t"
+            g.to_smarts(nil,0,0,0,1,mode)
+            print "\n"
+        end
     end
 end
 

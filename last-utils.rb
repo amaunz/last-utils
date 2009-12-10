@@ -25,7 +25,7 @@ class LUGraph
       opt_t = []
       opt_e = []
       @edges[f].each do |t,e|
-          if ((mode == 'ade' || mode == 'nde' || mode == 'ode') || e.del == 0 || to == 1)
+          if ((mode == 'ade' || mode == 'nde' || mode == 'ode') || e.del == 0 || t == 1)
               if (mode == 'nop' || mode == 'ode' || e.weight >= opt)
                   mand_branches+=1
                   opt_branches-=1

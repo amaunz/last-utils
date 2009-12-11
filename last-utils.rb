@@ -1,6 +1,9 @@
 #!/usr/bin/ruby1.8
 
 require('openbabel')
+OpenBabel::ttab.set_from_type("ATN");
+OpenBabel::ttab.set_to_type("XYZ");
+
 #include OpenBabel   <= may be used for direct access to OB namespace, i.e. w/o "OpenBabel::". Below, I use namespaces for clarity.
 require('set')
 
@@ -146,7 +149,11 @@ class LUNode
     l_s = @lab_n.split
     if l_s.size > 1 
         for i in 0..l_s.size-1 do
-            print "##{l_s[i]}"
+            if l_s[i] == "254" # aromatic carbon support
+                print "#6&a"
+            else
+                print "##{l_s[i]}"  
+            end
             print "," unless i==l_s.size-1
         end
     else 
@@ -172,6 +179,7 @@ class LUEdge
                 when '1' then print "-"
                 when '2' then print "="
                 when '3' then print "#"
+                when '4' then print ":"
                 else 
             end
             print "," unless i==l_e.size-1
@@ -182,6 +190,7 @@ class LUEdge
             #when '1' then print "-"
             when '2' then print "="
             when '3' then print "#"
+            when '4' then print ":"
             else 
         end
     end
@@ -261,12 +270,12 @@ end
 
 def smarts(dom, mode)
     dom[:grps].sort{|a,b| a[0]<=>b[0]}.each do |id, g| 
-        if g.edges[0][1].del == 0
+        #if g.edges[0][1].del == 0
             print "#{id}\t"
             print "#{dom[:acts][id]}\t"
             g.to_smarts(nil,0,0,0,1,mode)
             print "\n"
-        end
+        #end
     end
 end
 

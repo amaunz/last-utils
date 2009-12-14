@@ -149,15 +149,19 @@ class LUNode
     l_s = @lab_n.split
     if l_s.size > 1 
         for i in 0..l_s.size-1 do
-            if l_s[i] > "150" # aromatic carbon support
-                print "##{l_s[i]-150}&a"  
+            if l_s[i].to_i > 150 # aromatic carbon support
+                print "##{l_s[i].to_i-150}&a"  
             else
                 print "##{l_s[i]}"  
             end
             print "," unless i==l_s.size-1
         end
     else 
-        print "##{@lab_n}"
+        if @lab_n.to_i > 150 # aromatic carbon support
+            print "##{@lab_n.to_i-150}&a"  
+        else
+            print "##{@lab_n}"
+        end
     end
   end
 end

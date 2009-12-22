@@ -1,8 +1,6 @@
 #!/usr/bin/ruby1.8
 
 require('openbabel')
-OpenBabel::ttab.set_from_type("ATN");
-OpenBabel::ttab.set_to_type("XYZ");
 
 #include OpenBabel   <= may be used for direct access to OB namespace, i.e. w/o "OpenBabel::". Below, I use namespaces for clarity.
 require('set')
@@ -338,7 +336,6 @@ def match_file (file)
             smi_arr << line
         end
     end
-
 
     $stderr.print "Processing smarts... "
     smarts.each do |s|

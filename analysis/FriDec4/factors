@@ -1,6 +1,0 @@
-ala: all levels maximum count
-ade: as ala, but no deletions by SVD
-nla: next level count
-nde: as nla, but no deletions by SVD
-nop: no optional branches by SVD
-ode: as nop, but no deletions by SVD

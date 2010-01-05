@@ -1,0 +1,5 @@
+#!/bin/bash
+# Filters lines longer than 600 characters inplace
+# $1: file to filter
+
+sed -n -i '/^.\{600\}/!p' $1

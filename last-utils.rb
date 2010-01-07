@@ -287,6 +287,7 @@ def match (smiles, smarts, verbose=true)
     c.set_in_format 'smi'
     m=OpenBabel::OBMol.new
     c.read_string m, smiles
+    m.set_aromatic_perceived
     m.kekulize
 
     p=OpenBabel::OBSmartsPattern.new

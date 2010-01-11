@@ -176,22 +176,29 @@ class LUEdge
   def to_smarts
      l_e = @lab_e.split
     if l_e.size > 1 
+        aromatized = false
         for i in 0..l_e.size-1
             case l_e[i]
-                when '1' then print "-"
-                when '2' then print "="
-                when '3' then print "#"
-                when '4' then print ":"
+                when '1' then 
+                    print "-"
+                when '2' then 
+                    print "="
+                when '3' then 
+                    print "#"
+                when '4' then 
+                    print ":" 
+                    aromatized = true
                 else 
             end
             print "," unless i==l_e.size-1
         end
+        print ",:" unless aromatized # always allow aromatic contexts
     else 
         case @lab_e
             # Uncomment the next line for explicit aliphatic bindings in notation
-            #when '1' then print "-"
-            when '2' then print "="
-            when '3' then print "#"
+            when '1' then print "-,:"
+            when '2' then print "=,:"
+            when '3' then print "#,:"
             when '4' then print ":"
             else 
         end
@@ -287,8 +294,6 @@ def match (smiles, smarts, verbose=true)
     c.set_in_format 'smi'
     m=OpenBabel::OBMol.new
     c.read_string m, smiles
-    m.set_aromatic_perceived
-    m.kekulize
 
     p=OpenBabel::OBSmartsPattern.new
     if !p.init(smarts)

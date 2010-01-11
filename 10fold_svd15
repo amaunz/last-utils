@@ -4,15 +4,15 @@ for i in `seq 0 9`; do
     echo "**********"
     echo "BLOOD $i: `date`"
     echo "**********"
-    ~/validations/last-utils/wrapper10 ~/validations/fminer/folds/bloodbarr.f22.$i.train.svd15.graphml ~/validations/ofsdata/folds/bloodbarr.$i.train.smi
+    ~/validations/last-utils/wrapper10 ~/validations/fminer/folds.lastpm/bloodbarr.f22.$i.train.svd15.graphml ~/validations/ofsdata/folds/bloodbarr.$i.train.smi
 
     echo "**********"
     echo "NCTRER $i: `date`"
     echo "**********"
-    ~/validations/last-utils/wrapper10 ~/validations/fminer/folds/nctrer.f14.$i.train.svd15.graphml ~/validations/ofsdata/folds/nctrer.$i.train.smi
+    ~/validations/last-utils/wrapper10 ~/validations/fminer/folds.lastpm/nctrer.f14.$i.train.svd15.graphml ~/validations/ofsdata/folds/nctrer.$i.train.smi
 
     echo "**********"
     echo "YOSHIDA $i: `date`"
     echo "**********"
-    ~/validations/last-utils/wrapper10 ~/validations/fminer/folds/yoshida.f14.$i.train.svd15.graphml ~/validations/ofsdata/folds/yoshida.$i.train.smi
+    ~/validations/last-utils/wrapper10 ~/validations/fminer/folds.lastpm/yoshida.f14.$i.train.svd15.graphml ~/validations/ofsdata/folds/yoshida.$i.train.smi
 done

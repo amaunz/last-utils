@@ -22,19 +22,25 @@ SMARTS are regular expressions for chemical fragments. The implementation used h
 For an introduction to SMARTS, see e.g. http://www.daylight.com/meetings/summerschool01/course/basics/smarts.html.
 
 For every node visited, we demand an explicit but arbitrary branch with '(~*)' IF AND ONLY IF there are n optional branches with n>1 (*). 
-In case of (*), for each branch bi, i in [1,n], we describe the 1-step ('local') neighborhood of the node by a recursive SMARTS pattern, including the node itself ("self"), predecessor ("backw", if any), bi, and successor ("forw", if any). The pattern bi is itself a LAST-SMARTS, and the local neighborhoods are combined via disjunction (there must be at least two due to (*)).
+In case of (*), for each branch bi, i in [1,n], we describe the 1-step ('local') neighborhood of the node by a recursive SMARTS pattern, including the node itself, predecessor,bi, and successor.
+The pattern bi is itself a LAST-SMARTS, and the local neighborhoods are combined via disjunction (there must be at least two due to (*)).
 
-Formally, LAST-SMARTS are defined as follows:
-----------------------------------------------------------------------------------------
-LAST-SMARTS: {node:n, branchnode:n} bond:b ...
-----------------------------------------------------------------------------------------
-      node: '[#'int:n']'
-      bond: {'','=','#'}                                                                     // single have no symbol
-  bondnode: bond node
-     local: node:self '(' bond:l LAST-SMARTS:branch ')' [(bondnode:back), bondnode:forw]
-branchnode: '[#' int:type ';$(' local:env ')' ... '](~*)'
-----------------------------------------------------------------------------------------
-where t:o denotes an object o of type t, {} denotes "exactly one of", [] denotes "at least one of", and 's' denotes the string constant s. Spaces are just for clarity and must be removed on the right hand side of ':',  since they are illegal in SMARTS expressions.
+Formally, LAST-SMARTS are defined as follows (EBNF):
 
+AN := ’17’ | ’35’ | ’5’ | ’6’ | ’7’ | ’8’ | ’15’ | ’16’ | ’9’ | ’53’
+A  := (AN ’,’ A) | AN
+SB := ’-’ | ’=’ | ’#’ | ’:’
+E  := (SB ’,’ E) | SB
+N  := ’[#’ A ’]’
+LR := (L ’,’ LR) | L
+L  := N ’(’ E LS ’)’ (’(’ E N ’)’)+
+BN := ’[#’ A ’;$’ ’(’ LR ’)’ ’]’ ’(~*)’+
+LS := (N | BN) | LS E (N | BN)
 
-Andreas Maunz, 2009
+Example:
+[#7] [#6;$([#6]([#7])([#7 ])=[#6 ]),$([#6]([#7][#6])([#7 ])=[#6 ])](~*) =[#6]
+This denotes a nitrogen connected to a carbon double-connected to a carbon. The middle carbon’s local environment is recursively described. It consists of back and forward links (italic), but additionally specifies either a nitrogen or a nitrogen/carbon branch. 
+Since the standard is “truly recursive”, i.e. nothing inside the $(...) is identified with the outside, we need (~*) to enforce that at least one additional branch is actually attached.
+
+Andreas Maunz, 2010
+

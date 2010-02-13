@@ -39,7 +39,7 @@ LS := (N | BN) | LS E (N | BN)
 
 Example:
 [#7] [#6;$([#6]([#7])([#7 ])=[#6 ]),$([#6]([#7][#6])([#7 ])=[#6 ])](~*) =[#6]
-This denotes a nitrogen connected to a carbon double-connected to a carbon. The middle carbon’s local environment is recursively described. It consists of back and forward links (italic), but additionally specifies either a nitrogen or a nitrogen/carbon branch. 
+This denotes a nitrogen connected to a carbon double-connected to a carbon. The middle carbon’s local environment is recursively described. It consists of back and forward links, but additionally specifies either a nitrogen or a nitrogen/carbon branch. 
 Since the standard is “truly recursive”, i.e. nothing inside the $(...) is identified with the outside, we need (~*) to enforce that at least one additional branch is actually attached.
 
 Andreas Maunz, 2010

@@ -48,10 +48,10 @@ class LUGraph
           end
       end
       nr_b = 0
-      if (mode == 'nla' || mode == 'nde')
-        nr_b = different_opts.max[1] unless different_opts.size == 0 # EITHER nla variant (DEFAULT) OR
-      elsif (mode == 'ala' || mode == 'ade')
-        nr_b = different_opts.values.max unless different_opts.size == 0 # ala variant
+      if (mode == 'nls' || mode == 'nde')
+        nr_b = different_opts.max[1] unless different_opts.size == 0 # EITHER nls variant (DEFAULT) OR
+      elsif (mode == 'msa' || mode == 'ade')
+        nr_b = different_opts.values.max unless different_opts.size == 0 # msa variant
       end
 
       if opt_branches != opt_t.size
@@ -440,12 +440,12 @@ else
 end
 
 if status
-    puts "Usage: #{$0} 1 [ ala | ade | nla | nde | nop | ode ] < /path/to/graphmlfile.graphml > /path/to/smartsfile.smarts" 
+    puts "Usage: #{$0} 1 [ msa | nls | nop ] < /path/to/graphmlfile.graphml > /path/to/smartsfile.smarts" 
     puts "       #{$0} 2 /path/to/smifile.smi < /path/to/smartsfile.smarts > /path/to/lastpmfile.lastpm" 
     puts "       cmd=1 : convert GraphML to SMARTS."
-    puts "           ala (ade) : All level max opt (no deletions)."
-    puts "           nla (nde) : Next level opt (no deletions)."
-    puts "           nop (ode) : No opt (no deletions)."
+    puts "           msa : All level max opt."
+    puts "           nls : Next level opt."
+    puts "           nop : No opt."
     puts "       cmd=2 : match SMARTS to SMILES file and create LASTPM file."
     exit
 end

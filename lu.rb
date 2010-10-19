@@ -1,5 +1,3 @@
-#!/usr/bin/ruby1.8
-
 require('openbabel')
 
 #include OpenBabel   <= may be used for direct access to OB namespace, i.e. w/o "OpenBabel::". Below, I use namespaces for clarity.

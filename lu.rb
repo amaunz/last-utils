@@ -376,6 +376,17 @@ class LU
       $stderr.puts
   end
 
+  def match_smarts (smiles,smarts) # AM LAST-PM: smiles= hash id->smi
+    result={}
+    smarts.each do |s|
+      ids=[]
+      smiles.each do |id,smi|
+          ids << id unless !match(smi,s,false)
+      end
+      result[smarts] = ids
+    end
+    result
+  end
 
   # Demonstrates different SMARTS patterns
   def demo

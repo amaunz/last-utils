@@ -286,6 +286,13 @@ class LU
       end
   end
 
+  def smarts_rb(dom, mode)
+      result = []
+      dom[:grps].sort{|a,b| a[0]<=>b[0]}.each do |id, g| 
+          result << g.to_smarts(nil,0,0,0,1,mode)
+      end
+      result
+  end
 
   def match (smiles, smarts, verbose=true)
       c=OpenBabel::OBConversion.new
@@ -374,7 +381,7 @@ class LU
       $stderr.puts
   end
 
-  def match_smarts (smiles,smarts) # AM LAST-PM: smiles= hash id->smi
+  def match_rb (smiles,smarts) # AM LAST-PM: smiles= hash id->smi
     result={}
     smarts.each do |s|
       ids=[]

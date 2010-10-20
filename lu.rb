@@ -390,7 +390,7 @@ class LU
             ids << id unless !match(smiles[id],s,false)
           end
       end
-      result[smarts] = ids
+      result[s] = ids
     end
     result
   end

@@ -14,7 +14,7 @@ class LUGraph
 
   # LAST-SMARTS
   #   to_smarts(    nil,      0,0,  0,   1,<pa>)  <== DEFAULT
-  def to_smarts(backw_e,backw_n,f,opt,init,mode)
+  def to_smarts(backw_e,backw_n,f,opt,init,mode,s=$stdout)
       opt = @edges[0][1].weight unless !init # initialize opt level to weight of first edge
       mand_branches=0
       opt_branches = @edges[f].size
@@ -65,73 +65,73 @@ class LUGraph
         exit
       end
 
-      print "["
-      @nodes[f].to_smarts
+      s.print "["
+      @nodes[f].to_smarts(s)
       do_branch=(opt_branches>1)
       if do_branch
           # 1) Uncomment next line to not force at least one branch (c.f. not. 17.11.09)
-          # print "$(" ; @nodes[f].to_smarts ; print ")," 
+          # s.print "$(" ; @nodes[f].to_smarts ; s.print ")," 
           # 1) end
-          print ";"
+          s.print ";"
           for i in 0..opt_branches-1
               t = opt_t[i]
               e = opt_e[i]
-              print "$("
+              s.print "$("
 
-                  print "["                   # self
-                  @nodes[f].to_smarts         # 
-                  print "]"                   # 
+                  s.print "["                   # self
+                  @nodes[f].to_smarts(s)         # 
+                  s.print "]"                   # 
 
-                  print "("                   # branch
-                  e.to_smarts                 # 
-                  to_smarts(e,f,t,e.weight,0,mode)    # recursive: LAST-SMARTS
-                  print ")"                   # 
+                  s.print "("                   # branch
+                  e.to_smarts(s)                 # 
+                  to_smarts(e,f,t,e.weight,0,mode,s)    # recursive: LAST-SMARTS
+                  s.print ")"                   # 
 
                   if backw_n!=f && !backw_e.nil?          # backw
-                      print "(" unless mand_branches==0   #
-                      backw_e.to_smarts                   #
-                      print "["                           #
-                      @nodes[backw_n].to_smarts           #
-                      print "]"                           #
-                      print ")" unless mand_branches==0   #
+                      s.print "(" unless mand_branches==0   #
+                      backw_e.to_smarts(s)                   #
+                      s.print "["                           #
+                      @nodes[backw_n].to_smarts(s)           #
+                      s.print "]"                           #
+                      s.print ")" unless mand_branches==0   #
                   end
 
                   for j in 0..mand_branches-1               # forw
-                      print "(" unless j==mand_branches-1   #
-                      mand_e[j].to_smarts                   #
-                      print "["                             #
-                      @nodes[mand_t[j]].to_smarts           #
-                      print "]"                             #
-                      print ")" unless j==mand_branches-1   #
+                      s.print "(" unless j==mand_branches-1   #
+                      mand_e[j].to_smarts(s)                #
+                      s.print "["                             #
+                      @nodes[mand_t[j]].to_smarts(s)           #
+                      s.print "]"                             #
+                      s.print ")" unless j==mand_branches-1   #
                   end
 
-              print ")"
-              print "," unless i==opt_branches-1
+              s.print ")"
+              s.print "," unless i==opt_branches-1
           end
       end
-      print "]"
+      s.print "]"
       for i in 1..nr_b
-        print "(~*)" unless !do_branch
+        s.print "(~*)" unless !do_branch
       end
 
       # 2) Uncomment next block to make single optional edges mandatory (c.f. not. 17.11.09)
       if !do_branch && opt_branches==1
           t = opt_t[0]
           e = opt_e[0]
-          print "(" unless mand_branches==0
-          e.to_smarts
-          to_smarts(e,f,t,e.weight,0,mode)
-          print ")" unless mand_branches==0
+          s.print "(" unless mand_branches==0
+          e.to_smarts(s)
+          to_smarts(e,f,t,e.weight,0,mode,s)
+          s.print ")" unless mand_branches==0
       end
       # 2) end
 
       for i in 0..mand_branches-1
           t = mand_t[i]
           e = mand_e[i]
-          print "(" unless i==mand_branches-1
-          e.to_smarts
-          to_smarts(e,f,t,e.weight,0,mode)
-          print ")" unless i==mand_branches-1
+          s.print "(" unless i==mand_branches-1
+          e.to_smarts(s)
+          to_smarts(e,f,t,e.weight,0,mode,s)
+          s.print ")" unless i==mand_branches-1
       end
   end
 end
@@ -141,65 +141,72 @@ class LUNode
   def initialize(id)
     @id = id
   end
-  def to_smarts
+  def to_smarts(s=$stdout)
     l_s = @lab_n.split
     if l_s.size > 1 
         for i in 0..l_s.size-1 do
             if l_s[i].to_i > 150 # aromatic carbon support
-                print "##{l_s[i].to_i-150}"  
+                s.print "##{l_s[i].to_i-150}"  
             else
-                print "##{l_s[i]}"  
+                s.print "##{l_s[i]}"  
             end
-            print "," unless i==l_s.size-1
+            s.print "," unless i==l_s.size-1
         end
     else 
         if @lab_n.to_i > 150 # aromatic carbon support
-            print "##{@lab_n.to_i-150}"  
+            s.print "##{@lab_n.to_i-150}"  
         else
-            print "##{@lab_n}"
+            s.print "##{@lab_n}"
         end
     end
   end
 end
 
 class LUEdge
-  attr_accessor :source, :target, :lab_e, :weight, :del, :opt
-  def initialize(source, target)
+  attr_accessor :source, :target, :lab_e, :weight, :del, :opt, :no_aromatic
+  def initialize(source, target, no_aromatic=true)
     @source = source
     @target = target
+    @no_aromatic = no_aromatic
   end
   def to_s
     puts "'#{@source} #{@target} #{@lab_e} #{@weight} #{@del} #{@opt}'"
   end
-  def to_smarts
+  def to_smarts(s=$stdout)
      l_e = @lab_e.split
     if l_e.size > 1 
         aromatized = false
         for i in 0..l_e.size-1
             case l_e[i]
                 when '1' then 
-                    print "-"
+                    s.print "-"
                 when '2' then 
-                    print "="
+                    s.print "="
                 when '3' then 
-                    print "#"
+                    s.print "#"
                 when '4' then 
-                    print ":" 
+                    s.print ":" 
                     aromatized = true
                 else 
             end
-            print "," unless i==l_e.size-1
+            s.print "," unless i==l_e.size-1
         end
-        print ",:" unless aromatized # always allow aromatic contexts
+        s.print ",:" unless no_aromatic || aromatized # always allow aromatic contexts
     else 
         case @lab_e
             # Uncomment the next line for explicit aliphatic bindings in notation
-            when '1' then print "-,:"
-            when '2' then print "=,:"
-            when '3' then print "#,:"
-            when '4' then print ":"
-            else 
+            when '1' then 
+                s.print "-" 
+            when '2' then 
+                s.print "=" 
+            when '3' then
+                s.print "#" 
+            when '4' then 
+              s.print ":" 
+              aromatized = true
+            else
         end
+        s.print ",:" unless no_aromatic || aromatized
     end
   end
 end
@@ -246,7 +253,7 @@ class LU
         # For each edge tag
         graph_edges = Hash.new{ |h,k| h[k]=Hash.new(&h.default_proc) }
         (g/:edge).each do |e|
-            edge = LUEdge.new(e.attributes['source'].to_i, e.attributes['target'].to_i)
+            edge = LUEdge.new(e.attributes['source'].to_i, e.attributes['target'].to_i) # AM LAST: pass 'false' as 3rd arg to enable aromatic wildcarding
             (e/:data).each do |data|
                 slot = data.inner_html
                 case data.attributes['key']
@@ -287,11 +294,12 @@ class LU
   end
 
   def smarts_rb(dom, mode)
-      result = []
+      s = StringIO.new
       dom[:grps].sort{|a,b| a[0]<=>b[0]}.each do |id, g| 
-          result << g.to_smarts(nil,0,0,0,1,mode)
+          g.to_smarts(nil,0,0,0,1,mode,s)
+          s.print(" ")
       end
-      result
+      s.string.split # return array
   end
 
   def match (smiles, smarts, verbose=true)
@@ -299,7 +307,6 @@ class LU
       c.set_in_format 'smi'
       m=OpenBabel::OBMol.new
       c.read_string m, smiles
-
       p=OpenBabel::OBSmartsPattern.new
       if !p.init(smarts)
           puts "Error! Smarts pattern invalid."
@@ -385,10 +392,12 @@ class LU
     result={}
     smarts.each do |s|
       ids=[]
-      smiles.each do |id,smi|
-          ids << id unless !match(smi,s,false)
+      smiles.each_index do |id|
+          if (id>1) 
+            ids << id unless !match(smiles[id],s,false)
+          end
       end
-      result[smarts] = ids
+      result[s] = ids
     end
     result
   end

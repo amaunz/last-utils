@@ -1,4 +1,0 @@
-Usage: ./last-utils.rb cmd [/path/to/smifile.smi] < file
-  cmd=1 : convert GraphML to SMARTS
-  cmd=2 : match SMARTS to SMILES file 'smifile.smi'
-  Output goes to $stdout.

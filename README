@@ -2,19 +2,21 @@ Welcome to LAST-Utils.
 
 These are LAST utilities, available from http://github.com/amaunz/last-utils/tree/master. 
 Requirements: ruby 1.8 with OpenBabel bindings (see http://openbabel.org/wiki/Ruby), as well as gem (ruby plugin) "hpricot". 
-LAST is available from http://github.com/amaunz/last/tree/master.
 
 
 EXAMPLES:
 Two modi are available: conversion LAST->SMARTS and instantiation SMARTS/SMILES. Examples:
 
 Mine LAST descriptors and convert output to SMARTS (see LAST README file how to use the fminer frontend binary for LAST):
-./fminer -f14 -r ../cpdbdata/salmonella_mutagenicity/salmonella_mutagenicity_alt.smi ../cpdbdata/salmonella_mutagenicity/salmonella_mutagenicity_alt.class | ../last-utils/last-utils.rb 1 > salm-last.smarts
+./fminer -f14 -r ../cpdbdata/salmonella_mutagenicity/salmonella_mutagenicity_alt.smi ../cpdbdata/salmonella_mutagenicity/salmonella_mutagenicity_alt.class | ../last-utils/last-utils.rb 1 "msa" > salm-last.smarts
+Note: Variants 'msa' and 'nls' produce LAST-SMARTS with optional parts of the structures (with recursive SMARTS), while 'nop' disallows optional parts of the structures (ambiguities only on the atom / edge level).
 
 Find instantiations of molecules in a .smi file using the last descriptors we just mined:
 ../last-utils/last-utils.rb 2 ../cpdbdata/salmonella_mutagenicity/salmonella_mutagenicity_alt.smi < salm-last.smarts > salm-last.inst
 
-For more information see USAGE or run last-utils.rb without arguments.
+For more information run last-utils.rb without arguments.
+
+
 
 
 TRANSFORMATION TO SMARTS:

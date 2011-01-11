@@ -244,10 +244,10 @@ class LU
       g.xpath('graphml:data', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |d|
         key = d['key']
         assoc = case key 
-                when 'act' then activities
-                when 'hops' then hops
-                end
-        assoc[id] = d.text
+          when 'act' then activities
+          when 'hops' then hops
+        end
+        assoc[id] = d.text.to_i
       }
 
       # For each node tag

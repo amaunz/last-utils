@@ -246,8 +246,9 @@ class LU
         assoc = case key 
           when 'act' then activities
           when 'hops' then hops
+          else nil
         end
-        assoc[id] = d.text.to_i
+        assoc[id] = d.text.to_i unless assoc.nil?
       }
 
       # For each node tag

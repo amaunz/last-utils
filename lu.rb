@@ -227,7 +227,7 @@ class LU
     ## (doc/:graph).each do |g|
     ##    id=g.attributes['id'].to_i
     doc.xpath('//graphml:graph', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |g|
-      id=g['id']
+      id=g['id'].to_i
 
       # For each data tag
       #(g/:data).each do |d|
@@ -267,15 +267,15 @@ class LU
 
       graph_nodes = {}
       g.xpath('graphml:node', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |n|
-        id = n['id'].to_i
-        node = LUNode.new(id)
+        nid = n['id'].to_i
+        node = LUNode.new(nid)
         n.xpath('graphml:data', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |d|
           case d['key']
             when 'lab_n' then node.lab_n = d.text
             else nil
           end
         }
-        graph_nodes[id]=node
+        graph_nodes[nid]=node
       }
 
 

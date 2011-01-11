@@ -1,7 +1,7 @@
 Welcome to LAST-Utils.
 
 These are LAST utilities, available from http://github.com/amaunz/last-utils/tree/master. 
-Requirements: ruby 1.8 with OpenBabel bindings (see http://openbabel.org/wiki/Ruby), as well as gem (ruby plugin) "hpricot". 
+Requirements: ruby 1.8 with OpenBabel bindings (see http://openbabel.org/wiki/Ruby), as well as gem (ruby plugin) "nokogiri". 
 
 
 EXAMPLES:

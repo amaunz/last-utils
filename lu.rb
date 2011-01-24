@@ -147,8 +147,10 @@ class LUNode
       for i in 0..l_s.size-1 do
         if l_s[i].to_i > 150 # aromatic carbon support
           s.print "##{l_s[i].to_i-150}"  
+          s.print "#&a"
         else
           s.print "##{l_s[i]}"  
+          s.print "#&A"
         end
         s.print "," unless i==l_s.size-1
       end

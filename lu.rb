@@ -157,8 +157,10 @@ class LUNode
     else 
       if @lab_n.to_i > 150 # aromatic carbon support
         s.print "##{@lab_n.to_i-150}"  
+        s.print "#&a"
       else
         s.print "##{@lab_n}"
+        s.print "#&A"
       end
     end
   end

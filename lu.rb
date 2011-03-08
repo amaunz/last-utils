@@ -426,8 +426,17 @@ def match_file (file)
       end
     end
 
-    string_result << "\"#{s.split.last}\"\t["
-    string_result << string_actives << "] ["
+    fminer_output=false
+    if ENV['FMINER_LAZAR'].size
+            fminer_output=true
+    end
+    string_result << "\"" unless fminer_output
+    string_result << "#{s.split.last}"
+    string_result << "\"" unless fminer_output
+    string_result << "\t["
+    string_actives.chomp!(" ") if fminer_output
+    string_result << string_actives
+    string_result << "] [" unless fminer_output
     string_result << string_inactives << "]"
 
     puts "#{string_result}"

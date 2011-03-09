@@ -18,7 +18,7 @@ when '1'
 	if $*.size==3
 		aromatic=false unless $*[2]!="a"
 	end
-        dom = lu.read(aromatic)
+        dom = lu.read(nil,aromatic)
         lu.smarts(dom, $*[1])
     end
 when '2'

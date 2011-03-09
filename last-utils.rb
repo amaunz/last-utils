@@ -39,6 +39,7 @@ if status
     puts "           msa : All level max opt."
     puts "           nls : Next level opt."
     puts "           nop : No opt."
+    puts "           a: Disable explicit node annotation for aromatic/aliphatic."
     puts "       cmd=2 : match SMARTS to SMILES file and create LASTPM file."
     puts "       cmd=3 : demo mode."
     exit

@@ -137,9 +137,10 @@ class LUGraph
 end
 
 class LUNode
-  attr_accessor :id, :lab_n
-  def initialize(id)
+  attr_accessor :id, :lab_n, :arom
+  def initialize(id, arom)
     @id = id
+    @arom = arom
   end
   def to_smarts(s=$stdout)
     l_s = @lab_n.split
@@ -150,7 +151,7 @@ class LUNode
           s.print "&a"
         else
           s.print "##{l_s[i]}"  
-          s.print "&A"
+          s.print "&A" unless !@arom
         end
         s.print "," unless i==l_s.size-1
       end
@@ -160,7 +161,7 @@ class LUNode
         s.print "&a"
       else
         s.print "##{@lab_n}"
-        s.print "&A"
+        s.print "&A" unless !@arom
       end
     end
   end
@@ -216,7 +217,7 @@ class LUEdge
 end
 
 class LU
-  def read(xml=nil)
+  def read(xml=nil,aromatic=true)
     # Store activites and hops seperately
     activities = {}
     hops = {}
@@ -272,7 +273,7 @@ class LU
       graph_nodes = {}
       g.xpath('graphml:node', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |n|
         nid = n['id'].to_i
-        node = LUNode.new(nid)
+        node = LUNode.new(nid,aromatic)
         n.xpath('graphml:data', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |d|
           case d['key']
             when 'lab_n' then node.lab_n = d.text
@@ -390,7 +391,7 @@ def match_file (file)
   # build act hash
   act_hash={}
   $stderr.puts "Building activity database..."
-  File.open(file.sub(/.smi/, '.class')) do |cfile| # class
+  File.open(file.sub(/.smi/, '.class').sub(/.nob/,'')) do |cfile| # class
     while (line = cfile.gets)
       line_arr = line.split
       act_hash[line_arr.first]=line_arr.last

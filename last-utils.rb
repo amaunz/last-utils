@@ -40,6 +40,7 @@ if status
     puts "           nls : Next level opt."
     puts "           nop : No opt."
     puts "           a: Disable explicit node annotation for aromatic/aliphatic."
+    puts "              Useful when you previously used the -a option in fminer (or all atoms will be marked by aliphatic '&A')."
     puts "       cmd=2 : match SMARTS to SMILES file and create LASTPM file."
     puts "       cmd=3 : demo mode."
     exit

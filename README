@@ -15,9 +15,9 @@ Note: Variants 'msa' and 'nls' produce LAST-SMARTS with optional parts of the st
 2) Find instantiations of molecules in a .smi file using the last descriptors we just mined:
 /path/to/last-utils/last-utils.rb 2 /path/to/cpdbdata/salmonella_mutagenicity/salmonella_mutagenicity_alt.smi < salm-last.smarts > salm-last.inst
 
-For more information run last-utils.rb without arguments.
 
-
+NOTE:
+For precise synopsis and information run last-utils.rb without arguments.
 
 
 TRANSFORMATION TO SMARTS:

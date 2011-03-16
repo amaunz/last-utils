@@ -177,7 +177,7 @@ class LUEdge
   def initialize(source, target, aromatic_wc=false)
     @source = source
     @target = target
-    @no_aromatic = no_aromatic
+    @aromatic_wc = aromatic_wc
   end
   def to_s
     puts "'#{@source} #{@target} #{@lab_e} #{@weight} #{@del} #{@opt}'"

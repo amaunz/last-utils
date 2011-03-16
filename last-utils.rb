@@ -14,11 +14,15 @@ lu = LU.new
 case $*[0]
 when '1' 
     if !status
-	aromatic=true
-	if $*.size==3
-		aromatic=false unless $*[2]!="a"
+	no_aromatic=false
+	aromatic_wc=false
+	if $*.size>=3
+		no_aromatic=true unless $*[2]!="a"
+		if $*.size==4
+			aromatic_wc=true unless $*[3]!="w"
+		end
 	end
-        dom = lu.read(nil,aromatic)
+        dom = lu.read(nil,no_aromatic,aromatic_wc)
         lu.smarts(dom, $*[1])
     end
 when '2'
@@ -32,7 +36,7 @@ else
 end
 
 if status
-    puts "Usage: #{$0} 1 [ msa | nls | nop ] [a] < /path/to/graphmlfile.graphml > /path/to/smartsfile.smarts" 
+    puts "Usage: #{$0} 1 [ msa | nls | nop ] [a] [w] < /path/to/graphmlfile.graphml > /path/to/smartsfile.smarts" 
     puts "       #{$0} 2 /path/to/smifile.smi < /path/to/smartsfile.smarts > /path/to/lastpmfile.lastpm" 
     puts "       #{$0} 3" 
     puts "       cmd=1 : convert GraphML to SMARTS."
@@ -40,7 +44,8 @@ if status
     puts "           nls : Next level opt."
     puts "           nop : No opt."
     puts "           a: Disable explicit node annotation for aromatic/aliphatic."
-    puts "              Useful when you previously used the -a option in fminer (or all atoms will be marked by aliphatic '&A')."
+    puts "              Useful when you previously used the -a option in fminer (if not set all atoms will be marked as aromatic (if applicable) or aliphatic)"
+    puts "           w: Enable aromatic wildcarding on bonds."
     puts "       cmd=2 : match SMARTS to SMILES file and create LASTPM file."
     puts "       cmd=3 : demo mode."
     exit

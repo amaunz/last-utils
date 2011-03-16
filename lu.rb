@@ -136,11 +136,16 @@ class LUGraph
   end
 end
 
+# A Node
+# can be flagged as 'not aromatic'
+# useful for
+#  a) Deliberate ambiguous notation, even if mining was done with arom. perc.
+#  b) Kekule mining
 class LUNode
-  attr_accessor :id, :lab_n, :arom
-  def initialize(id, arom)
+  attr_accessor :id, :lab_n, :no_aromatic
+  def initialize(id, no_aromatic=false)
     @id = id
-    @arom = arom
+    @no_aromatic = no_aromatic
   end
   def to_smarts(s=$stdout)
     l_s = @lab_n.split
@@ -148,20 +153,20 @@ class LUNode
       for i in 0..l_s.size-1 do
         if l_s[i].to_i > 150 # aromatic carbon support
           s.print "##{l_s[i].to_i-150}"  
-          s.print "&a"
+          s.print "&a" unless @no_aromatic
         else
           s.print "##{l_s[i]}"  
-          s.print "&A" unless !@arom
+          s.print "&A" unless @no_aromatic
         end
         s.print "," unless i==l_s.size-1
       end
     else 
       if @lab_n.to_i > 150 # aromatic carbon support
         s.print "##{@lab_n.to_i-150}"  
-        s.print "&a"
+        s.print "&a" unless @no_aromatic
       else
         s.print "##{@lab_n}"
-        s.print "&A" unless !@arom
+        s.print "&A" unless @no_aromatic
       end
     end
   end
@@ -169,7 +174,7 @@ end
 
 class LUEdge
   attr_accessor :source, :target, :lab_e, :weight, :del, :opt, :no_aromatic
-  def initialize(source, target, no_aromatic=true)
+  def initialize(source, target, aromatic_wc=false)
     @source = source
     @target = target
     @no_aromatic = no_aromatic
@@ -196,7 +201,7 @@ class LUEdge
         end
         s.print "," unless i==l_e.size-1
       end
-      s.print ",:" unless no_aromatic || aromatized # always allow aromatic contexts
+      s.print ",:" if @aromatic_wc && !aromatized # always allow aromatic contexts
     else 
       case @lab_e
         # Uncomment the next line for explicit aliphatic bindings in notation
@@ -211,13 +216,13 @@ class LUEdge
         aromatized = true
       else
       end
-      s.print ",:" unless no_aromatic || aromatized
+      s.print ",:" if @aromatic_wc && !aromatized
     end
   end
 end
 
 class LU
-  def read(xml=nil,aromatic=true)
+  def read(xml=nil, no_aromatic=false, aromatic_wc=false)
     # Store activites and hops seperately
     activities = {}
     hops = {}
@@ -273,7 +278,7 @@ class LU
       graph_nodes = {}
       g.xpath('graphml:node', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |n|
         nid = n['id'].to_i
-        node = LUNode.new(nid,aromatic)
+        node = LUNode.new(nid,no_aromatic)
         n.xpath('graphml:data', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |d|
           case d['key']
             when 'lab_n' then node.lab_n = d.text
@@ -305,7 +310,7 @@ class LU
       g.xpath('graphml:edge', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |e|
         id1 = e['source'].to_i
         id2 = e['target'].to_i
-        edge = LUEdge.new(id1, id2)
+        edge = LUEdge.new(id1, id2, aromatic_wc)
         e.xpath('graphml:data', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |d|
             case d['key']
                when 'lab_e' then edge.lab_e = d.text

@@ -239,18 +239,6 @@ class LU
     doc.xpath('//graphml:graph', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |g|
       id=g['id'].to_i
 
-      # For each data tag
-      #(g/:data).each do |d|
-      #    key = d.attributes['key']
-      #    assoc = case key
-      #        when 'act' then activities
-      #        when 'hops' then hops
-      #        else nil
-      #    end
-      #    assoc[id] = d.inner_html.to_i unless assoc.nil?
-      #end
-      #
-
       g.xpath('graphml:data', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |d|
         key = d['key']
         assoc = case key 
@@ -260,20 +248,6 @@ class LU
         end
         assoc[id] = d.text.to_i unless assoc.nil?
       }
-
-      # For each node tag
-      #graph_nodes = {}
-      #(g/:node).each do |n|
-      #  node = LUNode.new(n.attributes['id'].to_i)
-      #  (n/:data).each do |data|
-      #    slot = data.inner_html
-      #    case data.attributes['key']
-      #    when 'lab_n' then node.lab_n = slot
-      #    else nil
-      #    end
-      #  end
-      #  graph_nodes[n.attributes['id'].to_i]=node
-      #end
 
       graph_nodes = {}
       g.xpath('graphml:node', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |n|
@@ -287,25 +261,7 @@ class LU
         }
         graph_nodes[nid]=node
       }
-
-
-      # For each edge tag
-      #graph_edges = Hash.new{ |h,k| h[k]=Hash.new(&h.default_proc) }
-      #(g/:edge).each do |e|
-      #  edge = LUEdge.new(e.attributes['source'].to_i, e.attributes['target'].to_i) # AM LAST: pass 'false' as 3rd arg to enable aromatic wildcarding
-      #  (e/:data).each do |data|
-      #    slot = data.inner_html
-      #    case data.attributes['key']
-      #    when 'lab_e' then edge.lab_e = slot
-      #    when 'weight' then edge.weight = slot.to_i
-      #    when 'del' then edge.del = slot.to_i
-      #    when 'opt' then edge.opt = slot.to_i
-      #    else nil
-      #    end
-      #  end
-      #  graph_edges[e.attributes['source'].to_i][e.attributes['target'].to_i] = edge
-      #end
-      
+            
       graph_edges = Hash.new{ |h,k| h[k]=Hash.new(&h.default_proc) }
       g.xpath('graphml:edge', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |e|
         id1 = e['source'].to_i
@@ -324,14 +280,6 @@ class LU
       }
 
       graphs[id] = LUGraph.new(graph_nodes, graph_edges)
-
-      #begin
-      #    cnt=0
-      #    graphs[id].edges.each do |f,_cmp_|
-      #        cnt = cnt + graphs[id].edges[f].size
-      #    end
-      #    puts "Graph '#{id}' has '#{cnt}' edges and '#{graphs[id].nodes.size}' nodes."
-      #end
 
     }
 

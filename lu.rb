@@ -221,300 +221,363 @@ class LUEdge
   end
 end
 
-class LU
-  def read(xml=nil, no_aromatic=false, aromatic_wc=false)
-    # Store activites and hops seperately
-    activities = {}
-    hops = {}
 
-    xml = STDIN.read unless !xml.nil?
-    doc, lu_graphs = Nokogiri::XML(xml), []
+  class XMLHandler < Nokogiri::XML::SAX::Document
+    attr_accessor :graphs, :activities, :hops
+    def initialize(no_aromatic, aromatic_wc)
+      @no_aromatic = no_aromatic
+      @aromatic_wc = aromatic_wc 
+      @g_id = 0
+      @n_id = 0
+      @e_f = 0
+      @e_t = 0
+      @node = nil # intermediate holder
+      @edge = nil #
 
-    # For each graph
-    graphs = {}
+      @graphs = {}
+      @activities = {}
+      @hops = {}
 
+      @in_graph=false
+      @graph_act=false
+      @graph_hops=false
+      @edge_lab=false
+      @edge_weight=false
+      @edge_del=false
 
-    ## (doc/:graph).each do |g|
-    ##    id=g.attributes['id'].to_i
-    doc.xpath('//graphml:graph', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |g|
-      id=g['id'].to_i
+      @graph_nodes={}
+      @graph_edges=Hash.new{ |h,k| h[k]=Hash.new(&h.default_proc) }
 
-      # For each data tag
-      #(g/:data).each do |d|
-      #    key = d.attributes['key']
-      #    assoc = case key
-      #        when 'act' then activities
-      #        when 'hops' then hops
-      #        else nil
-      #    end
-      #    assoc[id] = d.inner_html.to_i unless assoc.nil?
-      #end
-      #
+      @in_node=false
+      @in_edge=false
+    end
 
-      g.xpath('graphml:data', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |d|
-        key = d['key']
-        assoc = case key 
-          when 'act' then activities
-          when 'hops' then hops
-          else nil
+    def start_element(name, attrs = [])
+      case name
+
+      when 'graph' then 
+        @in_graph=true
+        g_id=attrs['id'].to_i  # get graph id
+
+      when 'node'  then 
+        if @in_graph then 
+           @in_node=true
+           @n_id=attrs['id'].to_i                                 
+        end # get node id
+
+      when 'edge'  then 
+        if @in_graph then 
+          @in_edge=true;  
+          @e_f=attrs['source'].to_i; 
+          @e_t=attrs['target'].to_i   
+        end # get edge nodes
+
+      # node does not occur (non-hierarchical)
+      when 'data' then 
+        if @in_graph && attrs['key']=='act'   then  
+          @graph_act=true   
+        end # get graph act
+      when 'data' then 
+        if @in_graph && attrs['key']=='hops'  then  
+          @graph_hops=true  
+        end  # get graph hops
+      when 'data' then 
+        if @in_edge && attrs['key']=='lab_e'  then  
+          @edge_lab=true    
+        end  # get edge elements
+      when 'data' then 
+        if @in_edge && attrs['key']=='weight' then  
+          @edge_weight=true 
+        end # 
+      when 'data' then 
+        if @in_edge && attrs['key']=='del'    then  
+          @edge_del=true    
+        end  # 
+      end
+    end
+
+    def characters(str)
+      if @in_graph
+        if @graph_act  then activities[g_id]=str.to_i; @graph_act=false;   end  # OK, non-hierarchical
+        if @graph_hops then hops[g_id]=str.to_i;       @graph_hops=false;  end  #
+        if @in_node    then @node=LUNode.new(@n_id,@no_aromatic) ; @node.lab_n=str ; end      # hierarchical, but trivial (one-level) case.
+        if @in_edge    then                                                               # hierarchical, non-trivial case.
+          @edge=LUEdge.new(@e_f,@e_t,@aromatic_wc) if @edge.nil?
+          if @edge_lab then @edge.lab_e=str; @edge_lab=false; end
+          if @edge_weight then @edge.weight=str.to_i; @edge_weight=false; end
+          if @edge_del then @edge.del=str.to_i; @edge_del=false; end
         end
-        assoc[id] = d.text.to_i unless assoc.nil?
-      }
+      end
+    end
 
-      # For each node tag
-      #graph_nodes = {}
-      #(g/:node).each do |n|
-      #  node = LUNode.new(n.attributes['id'].to_i)
-      #  (n/:data).each do |data|
-      #    slot = data.inner_html
-      #    case data.attributes['key']
-      #    when 'lab_n' then node.lab_n = slot
-      #    else nil
-      #    end
-      #  end
-      #  graph_nodes[n.attributes['id'].to_i]=node
-      #end
+    def end_element(name)
+      case name
+      when 'graph' then 
+        @graphs[id] = LUGraph.new(@graph_nodes, @graph_edges)
+        @in_graph=false;# create new graph here 
+      when 'node' then  
+        @graph_nodes[@n_id]=@node 
+        @in_node=false
+        @node=nil  # store away
+      when 'edge' then  
+        @graph_edges[@e_f][@e_to]=@edge
+        @in_edge=false
+        @edge=nil  # 
+      end
+    end
 
-      graph_nodes = {}
-      g.xpath('graphml:node', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |n|
-        nid = n['id'].to_i
-        node = LUNode.new(nid,no_aromatic)
-        n.xpath('graphml:data', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |d|
-          case d['key']
-            when 'lab_n' then node.lab_n = d.text
-            else nil
-          end
-        }
-        graph_nodes[nid]=node
-      }
+  end
 
 
-      # For each edge tag
-      #graph_edges = Hash.new{ |h,k| h[k]=Hash.new(&h.default_proc) }
-      #(g/:edge).each do |e|
-      #  edge = LUEdge.new(e.attributes['source'].to_i, e.attributes['target'].to_i) # AM LAST: pass 'false' as 3rd arg to enable aromatic wildcarding
-      #  (e/:data).each do |data|
-      #    slot = data.inner_html
-      #    case data.attributes['key']
-      #    when 'lab_e' then edge.lab_e = slot
-      #    when 'weight' then edge.weight = slot.to_i
-      #    when 'del' then edge.del = slot.to_i
-      #    when 'opt' then edge.opt = slot.to_i
-      #    else nil
-      #    end
-      #  end
-      #  graph_edges[e.attributes['source'].to_i][e.attributes['target'].to_i] = edge
-      #end
+
+  class LU
+      def read(xml=nil, no_aromatic=false, aromatic_wc=false)
+      # Store activites and hops seperately
+      #activities = {}
+      #hops = {}
+
+      handler = XMLHandler.new(no_aromatic, aromatic_wc)
+      parser = Nokogiri::XML::SAX::Parser.new(handler)
+      parser.parse(STDIN)
+
+      return {:grps => handler.graphs, :acts => handler.activities, :hops => handler.hops}
+
+      #xml = STDIN.read unless !xml.nil?
+      #doc, lu_graphs = Nokogiri::XML(xml), []
+
+      ## For each graph
+      #graphs = {}
+
+      #doc.xpath('//graphml:graph', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |g|
+      #  id=g['id'].to_i
+
+
+      #  g.xpath('graphml:data', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |d|
+      #    key = d['key']
+      #    assoc = case key 
+      #            when 'act' then activities
+      #            when 'hops' then hops
+      #            else nil
+      #            end
+      #    assoc[id] = d.text.to_i unless assoc.nil?
+      #  }
+
+      #  graph_nodes = {}
+      #  g.xpath('graphml:node', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |n|
+      #    nid = n['id'].to_i
+      #    node = LUNode.new(nid,no_aromatic)
+      #    n.xpath('graphml:data', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |d|
+      #      case d['key']
+      #      when 'lab_n' then node.lab_n = d.text
+      #      else nil
+      #      end
+      #    }
+      #    graph_nodes[nid]=node
+      #  }
+
+      #  graph_edges = Hash.new{ |h,k| h[k]=Hash.new(&h.default_proc) }
+      #  g.xpath('graphml:edge', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |e|
+      #    id1 = e['source'].to_i
+      #    id2 = e['target'].to_i
+      #    edge = LUEdge.new(id1, id2, aromatic_wc)
+      #    e.xpath('graphml:data', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |d|
+      #      case d['key']
+      #      when 'lab_e' then edge.lab_e = d.text
+      #      when 'weight' then edge.weight = d.text.to_i
+      #      when 'del' then edge.del = d.text.to_i
+      #      when 'opt' then edge.opt = d.text.to_i
+      #      else nil
+      #      end
+      #    }
+      #    graph_edges[id1][id2] = edge
+      #  }
+
+      #  graphs[id] = LUGraph.new(graph_nodes, graph_edges)
+
+
+      #}
+
+      #return {:grps => graphs, :acts => activities, :hops => hops}
       
-      graph_edges = Hash.new{ |h,k| h[k]=Hash.new(&h.default_proc) }
-      g.xpath('graphml:edge', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |e|
-        id1 = e['source'].to_i
-        id2 = e['target'].to_i
-        edge = LUEdge.new(id1, id2, aromatic_wc)
-        e.xpath('graphml:data', {"graphml"=>"http://graphml.graphdrawing.org/xmlns"}).each { |d|
-            case d['key']
-               when 'lab_e' then edge.lab_e = d.text
-               when 'weight' then edge.weight = d.text.to_i
-               when 'del' then edge.del = d.text.to_i
-               when 'opt' then edge.opt = d.text.to_i
-               else nil
-            end
-        }
-        graph_edges[id1][id2] = edge
-      }
-
-      graphs[id] = LUGraph.new(graph_nodes, graph_edges)
-
-      #begin
-      #    cnt=0
-      #    graphs[id].edges.each do |f,_cmp_|
-      #        cnt = cnt + graphs[id].edges[f].size
-      #    end
-      #    puts "Graph '#{id}' has '#{cnt}' edges and '#{graphs[id].nodes.size}' nodes."
-      #end
-
-    }
-
-  return {:grps => graphs, :acts => activities, :hops => hops}
-end
-
-def smarts(dom, mode)
-  dom[:grps].sort{|a,b| a[0]<=>b[0]}.each do |id, g| 
-    #if g.edges[0][1].del == 0
-    print "#{id}\t"
-    print "#{dom[:acts][id]}\t"
-    g.to_smarts(nil,0,0,0,1,mode)
-    print "\n"
-    #end
-  end
-end
-
-def smarts_rb(dom, mode)
-  s = StringIO.new
-  dom[:grps].sort{|a,b| a[0]<=>b[0]}.each do |id, g| 
-    g.to_smarts(nil,0,0,0,1,mode,s)
-    s.print(" ")
-  end
-  s.string.split # return array
-end
-
-def match (smiles, smarts, verbose=true)
-  c=OpenBabel::OBConversion.new
-  c.set_in_format 'smi'
-  m=OpenBabel::OBMol.new
-  c.read_string m, smiles
-  p=OpenBabel::OBSmartsPattern.new
-  if !p.init(smarts)
-    puts "Error! Smarts pattern invalid."
-    exit
-  end
-
-  if verbose  
-    p.match(m)
-    hits = p.get_umap_list
-    print "Found #{hits.size} instances of the SMARTS pattern '#{smarts}' in the SMILES string '#{smiles}'."
-    if hits.size>0
-      puts " Here are the atom indices:"
-    else
-      print "\n"
-    end
-    hits.each_with_index do |hit, index|
-      print "  Hit #{index}: [ "
-      hit.each do |atom_index|
-        print "#{atom_index} "
-      end
-      puts "]"
-    end		
-  end
-
-  p.match(m,true)
-end
-
-def match_file (file)
-  smarts = STDIN.readlines
-
-  # build act hash
-  act_hash={}
-  $stderr.puts "Building activity database..."
-  File.open(file.sub(/.smi/, '.class').sub(/.nob/,'')) do |cfile| # class
-    while (line = cfile.gets)
-      line_arr = line.split
-      act_hash[line_arr.first]=line_arr.last
-    end
-  end   
-
-  smi_arr=[]
-  $stderr.puts "Reading instances..."
-  File.open(file, "r") do |infile| # smi
-    while (line = infile.gets)
-      smi_arr << line
-    end
-  end
-
-  $stderr.print "Processing smarts... "
-  smarts.each do |s|
-    result_hash={}
-    string_result=""
-
-    smi_arr.each do |smi|
-      result_hash[smi.split.first] = act_hash[smi.split.first] unless !match(smi.split.last,s.split.last,false)
-      #$stderr.print "#{result_hash.size} "
     end
 
-    string_actives = " "
-    string_inactives = " "
-
-    result_hash.each do |id, act|
-      if act == "1"
-        string_actives << id << " "
-      elsif act == "0"
-        string_inactives << id << " "
+    def smarts(dom, mode)
+      dom[:grps].sort{|a,b| a[0]<=>b[0]}.each do |id, g| 
+        #if g.edges[0][1].del == 0
+        print "#{id}\t"
+        print "#{dom[:acts][id]}\t"
+        g.to_smarts(nil,0,0,0,1,mode)
+        print "\n"
+        #end
       end
     end
 
-    fminer_output=false
-    if ENV['FMINER_LAZAR'].size
-            fminer_output=true
-    end
-    string_result << "\"" unless fminer_output
-    string_result << "#{s.split.last}"
-    string_result << "\"" unless fminer_output
-    string_result << "\t["
-    string_actives.chomp!(" ") if fminer_output
-    string_result << string_actives
-    string_result << "] [" unless fminer_output
-    string_result << string_inactives << "]"
-
-    puts "#{string_result}"
-    nom = string_actives.split.size
-    den = (string_actives.split.size + string_inactives.split.size)
-    $stderr.print "#{nom}/#{den}(#{s.split[1]}) "
-  end
-  $stderr.puts
-end
-
-def match_rb (smiles,smarts) # AM LAST-PM: smiles= array id->smi
-  result={}
-  smarts.each do |s|
-    ids=[]
-    smiles.each_index do |id|
-      if (id>1) 
-        ids << id unless !match(smiles[id],s,false)
+    def smarts_rb(dom, mode)
+      s = StringIO.new
+      dom[:grps].sort{|a,b| a[0]<=>b[0]}.each do |id, g| 
+        g.to_smarts(nil,0,0,0,1,mode,s)
+        s.print(" ")
       end
+      s.string.split # return array
     end
-    result[s] = ids
-  end
-  result
-end
 
-def match_rb_hash (smiles,smarts) # AM LAST-PM: smiles= hash id->smi
-  result={}
-  smarts.each do |s|
-    ids=[]
-    smiles.each do |id,v|
-      if (id>1) 
-        ids << id unless !match(v,s,false)
+    def match (smiles, smarts, verbose=true)
+      c=OpenBabel::OBConversion.new
+      c.set_in_format 'smi'
+      m=OpenBabel::OBMol.new
+      c.read_string m, smiles
+      p=OpenBabel::OBSmartsPattern.new
+      if !p.init(smarts)
+        puts "Error! Smarts pattern invalid."
+        exit
       end
+
+      if verbose  
+        p.match(m)
+        hits = p.get_umap_list
+        print "Found #{hits.size} instances of the SMARTS pattern '#{smarts}' in the SMILES string '#{smiles}'."
+        if hits.size>0
+          puts " Here are the atom indices:"
+        else
+          print "\n"
+        end
+        hits.each_with_index do |hit, index|
+          print "  Hit #{index}: [ "
+          hit.each do |atom_index|
+            print "#{atom_index} "
+          end
+          puts "]"
+        end		
+      end
+
+      p.match(m,true)
     end
-    result[s] = ids
+
+    def match_file (file)
+      smarts = STDIN.readlines
+
+      # build act hash
+      act_hash={}
+      $stderr.puts "Building activity database..."
+      File.open(file.sub(/.smi/, '.class').sub(/.nob/,'')) do |cfile| # class
+        while (line = cfile.gets)
+          line_arr = line.split
+          act_hash[line_arr.first]=line_arr.last
+        end
+      end   
+
+      smi_arr=[]
+      $stderr.puts "Reading instances..."
+      File.open(file, "r") do |infile| # smi
+        while (line = infile.gets)
+          smi_arr << line
+        end
+      end
+
+      $stderr.print "Processing smarts... "
+      smarts.each do |s|
+        result_hash={}
+        string_result=""
+
+        smi_arr.each do |smi|
+          result_hash[smi.split.first] = act_hash[smi.split.first] unless !match(smi.split.last,s.split.last,false)
+          #$stderr.print "#{result_hash.size} "
+        end
+
+        string_actives = " "
+        string_inactives = " "
+
+        result_hash.each do |id, act|
+          if act == "1"
+            string_actives << id << " "
+          elsif act == "0"
+            string_inactives << id << " "
+          end
+        end
+
+        fminer_output=false
+        if ENV['FMINER_LAZAR'].size
+          fminer_output=true
+        end
+        string_result << "\"" unless fminer_output
+        string_result << "#{s.split.last}"
+        string_result << "\"" unless fminer_output
+        string_result << "\t["
+        string_actives.chomp!(" ") if fminer_output
+        string_result << string_actives
+        string_result << "] [" unless fminer_output
+        string_result << string_inactives << "]"
+
+        puts "#{string_result}"
+        nom = string_actives.split.size
+        den = (string_actives.split.size + string_inactives.split.size)
+        $stderr.print "#{nom}/#{den}(#{s.split[1]}) "
+      end
+      $stderr.puts
+    end
+
+    def match_rb (smiles,smarts) # AM LAST-PM: smiles= array id->smi
+      result={}
+      smarts.each do |s|
+        ids=[]
+        smiles.each_index do |id|
+          if (id>1) 
+            ids << id unless !match(smiles[id],s,false)
+          end
+        end
+        result[s] = ids
+      end
+      result
+    end
+
+    def match_rb_hash (smiles,smarts) # AM LAST-PM: smiles= hash id->smi
+      result={}
+      smarts.each do |s|
+        ids=[]
+        smiles.each do |id,v|
+          if (id>1) 
+            ids << id unless !match(v,s,false)
+          end
+        end
+        result[s] = ids
+      end
+      result
+    end
+
+
+    # Demonstrates different SMARTS patterns
+    def demo
+      # This pattern is equivalent to  [#7][#7][#6] :(
+      puts
+      match("NNC",                "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
+      match("N(=O)NC",            "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
+      match("N(=O)NCN",           "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
+      match("N(=O)NC(N)N",        "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
+      match("N(=O)NC=O",          "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
+      match("N(=O)NC(N)=O",       "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (yes)
+
+      # This pattern is better (seems to demand a branch), but actually demands no branch since no explict degree is forced, which allows "folding" :(
+      puts
+      match("NNC",            "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (no)
+      match("NN(C)C",         "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (no)
+      match("NN(C)C(N)",      "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (yes)
+      match("NN(C)C(=O)",     "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (yes)
+      match("NN(CC)(C)C(=O)", "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (yes)
+      match("NNC(=O)",        "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (no)
+
+      # This enhanced pattern enforces 1-step environments around the current node (f) and requires at least one branch :)
+      # See README for the recursive definition: 
+      puts
+      match("NNC",                     "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # no (no)
+      match("NN(C)C",                  "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # no (no)
+      match("NNC(N)",                  "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # no (no)
+      match("NN(C)C(=N)",              "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # yes (yes)
+      match("NN(C)C-N",                "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") 
+      match("NN(CC)(C)C(N)",           "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # yes (yes)
+      match("NN(CC)(C)C(N)(=O)",       "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # yes (yes)
+      match("NN(CC)C(=C)",             "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # no (no)
+      match("NN(CN)C(=N)",             "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # yes (yes) <- two embeddings is correct
+      match("NN(N)C(=N)",              "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # no (no)
+    end
   end
-  result
-end
-
-
-# Demonstrates different SMARTS patterns
-def demo
-  # This pattern is equivalent to  [#7][#7][#6] :(
-  puts
-  match("NNC",                "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
-  match("N(=O)NC",            "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
-  match("N(=O)NCN",           "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
-  match("N(=O)NC(N)N",        "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
-  match("N(=O)NC=O",          "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (no)
-  match("N(=O)NC(N)=O",       "[$([#7]),$([#7]=[#8])][$([#7]),$([#7][#6][#6]),$([#7][#6])][$([#6]),$([#6][#7]),$([#6]~[#7,#8])]")    # yes (yes)
-
-  # This pattern is better (seems to demand a branch), but actually demands no branch since no explict degree is forced, which allows "folding" :(
-  puts
-  match("NNC",            "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (no)
-  match("NN(C)C",         "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (no)
-  match("NN(C)C(N)",      "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (yes)
-  match("NN(C)C(=O)",     "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (yes)
-  match("NN(CC)(C)C(=O)", "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (yes)
-  match("NNC(=O)",        "[#7][$([#7][#6][#6]),$([#7][#6])][$([#6][#7]),$([#6]~[#7,#8])]")                         # yes (no)
-
-  # This enhanced pattern enforces 1-step environments around the current node (f) and requires at least one branch :)
-  # See README for the recursive definition: 
-  puts
-  match("NNC",                     "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # no (no)
-  match("NN(C)C",                  "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # no (no)
-  match("NNC(N)",                  "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # no (no)
-  match("NN(C)C(=N)",              "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # yes (yes)
-  match("NN(C)C-N",                "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") 
-  match("NN(CC)(C)C(N)",           "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # yes (yes)
-  match("NN(CC)(C)C(N)(=O)",       "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # yes (yes)
-  match("NN(CC)C(=C)",             "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # no (no)
-  match("NN(CN)C(=N)",             "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # yes (yes) <- two embeddings is correct
-  match("NN(N)C(=N)",              "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # no (no)
-end
-end
 

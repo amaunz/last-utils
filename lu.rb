@@ -2,6 +2,7 @@ require('openbabel')
 
 #include OpenBabel   <= may be used for direct access to OB namespace, i.e. w/o "OpenBabel::". Below, I use namespaces for clarity.
 require('set')
+require 'yaml'
 
 %w[pp rubygems nokogiri].each { |x| require x }
 
@@ -241,6 +242,7 @@ end
       @in_graph=false
       @graph_act=false
       @graph_hops=false
+      @node_lab=false
       @edge_lab=false
       @edge_weight=false
       @edge_del=false
@@ -257,40 +259,38 @@ end
 
       when 'graph' then 
         @in_graph=true
-        g_id=attrs['id'].to_i  # get graph id
+        @g_id=attrs[1].to_i  # get graph id
 
       when 'node'  then 
         if @in_graph then 
            @in_node=true
-           @n_id=attrs['id'].to_i                                 
+           @n_id=attrs[1].to_i
         end # get node id
 
       when 'edge'  then 
         if @in_graph then 
           @in_edge=true;  
-          @e_f=attrs['source'].to_i; 
-          @e_t=attrs['target'].to_i   
+          @e_f=attrs[1].to_i
+          @e_t=attrs[3].to_i   
         end # get edge nodes
 
-      # node does not occur (non-hierarchical)
       when 'data' then 
-        if @in_graph && attrs['key']=='act'   then  
+        if @in_graph && attrs[1]=='act'   then  
           @graph_act=true   
         end # get graph act
-      when 'data' then 
-        if @in_graph && attrs['key']=='hops'  then  
+        if @in_graph && attrs[1]=='hops'  then  
           @graph_hops=true  
         end  # get graph hops
-      when 'data' then 
-        if @in_edge && attrs['key']=='lab_e'  then  
+        if @in_node && attrs[1]=='lab_n'  then  
+          @node_lab=true   
+        end # get graph act
+        if @in_edge && attrs[1]=='lab_e'  then  
           @edge_lab=true    
         end  # get edge elements
-      when 'data' then 
-        if @in_edge && attrs['key']=='weight' then  
+        if @in_edge && attrs[1]=='weight' then  
           @edge_weight=true 
         end # 
-      when 'data' then 
-        if @in_edge && attrs['key']=='del'    then  
+        if @in_edge && attrs[1]=='del'    then  
           @edge_del=true    
         end  # 
       end
@@ -298,29 +298,61 @@ end
 
     def characters(str)
       if @in_graph
-        if @graph_act  then activities[g_id]=str.to_i; @graph_act=false;   end  # OK, non-hierarchical
-        if @graph_hops then hops[g_id]=str.to_i;       @graph_hops=false;  end  #
-        if @in_node    then @node=LUNode.new(@n_id,@no_aromatic) ; @node.lab_n=str ; end      # hierarchical, but trivial (one-level) case.
-        if @in_edge    then                                                               # hierarchical, non-trivial case.
-          @edge=LUEdge.new(@e_f,@e_t,@aromatic_wc) if @edge.nil?
-          if @edge_lab then @edge.lab_e=str; @edge_lab=false; end
-          if @edge_weight then @edge.weight=str.to_i; @edge_weight=false; end
-          if @edge_del then @edge.del=str.to_i; @edge_del=false; end
+
+        if @graph_act then 
+		@activities[@g_id]=str.to_i
+		@graph_act=false
+	end  # OK, non-hierarchical
+        
+	if @graph_hops then 
+		@hops[@g_id]=str.to_i;
+		@graph_hops=false
+	end  #
+
+	if @in_node then 
+          if @node.nil? then 
+		  @node=LUNode.new(@n_id,@no_aromatic) 
+	  end
+	  if @node_lab then 
+		  @node.lab_n=str
+		  @node_lab=false
+	  end
+	end      # hierarchical.
+
+	if @in_edge then   # hierarchical, non-trivial case.
+          if @edge.nil? then 
+		  @edge=LUEdge.new(@e_f,@e_t,@aromatic_wc) 
+	  end
+          if @edge_lab then 
+		  @edge.lab_e=str
+		  @edge_lab=false
+	  end
+          if @edge_weight then 
+		  @edge.weight=str.to_i
+		  @edge_weight=false
+	  end
+          if @edge_del then 
+		  @edge.del=str.to_i
+		  @edge_del=false
+	  end
         end
+
       end
     end
 
     def end_element(name)
       case name
       when 'graph' then 
-        @graphs[id] = LUGraph.new(@graph_nodes, @graph_edges)
+        @graphs[@g_id] = LUGraph.new(@graph_nodes, @graph_edges)
         @in_graph=false;# create new graph here 
+	@graph_nodes={}
+      	@graph_edges=Hash.new{ |h,k| h[k]=Hash.new(&h.default_proc) }
       when 'node' then  
         @graph_nodes[@n_id]=@node 
         @in_node=false
         @node=nil  # store away
       when 'edge' then  
-        @graph_edges[@e_f][@e_to]=@edge
+        @graph_edges[@e_f][@e_t]=@edge
         @in_edge=false
         @edge=nil  # 
       end

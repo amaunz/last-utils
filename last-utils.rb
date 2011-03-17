@@ -36,7 +36,7 @@ else
 end
 
 if status
-    puts "Usage: #{$0} 1 [ msa | nls | nop ] [dna] [awcb] < /path/to/graphmlfile.graphml > /path/to/smartsfile.smarts" 
+    puts "Usage: #{$0} 1 [ msa | nls | nop ] [nna] [wcb] < /path/to/graphmlfile.graphml > /path/to/smartsfile.smarts" 
     puts "       #{$0} 2 /path/to/smifile.smi < /path/to/smartsfile.smarts > /path/to/lastpmfile.lastpm" 
     puts "       #{$0} 3" 
     puts "       cmd=1 : convert GraphML to SMARTS."

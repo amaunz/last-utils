@@ -1,0 +1,10 @@
+Installation Instructions
+=========================
+
+You will need the OpenBabel ruby bindings.
+
+1) Install a Ruby implementation, such as Ruby Enterprise (see http://www.rubyenterpriseedition.com/)
+2) Compile Openbabel as described in the installation instructions for LAST-PM (see http://last-pm.maunz.de). You may have already done this.
+3) In your unpacked Openbabel sources, follow the instruction at http://openbabel.org/, "How to Compile" and "Language bindings for ruby".
+
+Andreas Maunz, 2010.

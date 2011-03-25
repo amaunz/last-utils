@@ -219,6 +219,8 @@ class LUEdge
           s.print ":" 
           aromatized = true
         else 
+          puts "lu.rb: Edge type '#{l_e[i]}' unknown!"
+          exit false
         end
         s.print "," unless i==l_e.size-1
       end
@@ -236,6 +238,8 @@ class LUEdge
         s.print ":" 
         aromatized = true
       else
+        puts "lu.rb: Edge type '#{l_e[i]}' unknown!"
+        exit false
       end
       s.print ",:" if @aromatic_wc && !aromatized
     end
@@ -281,7 +285,7 @@ class XMLHandler < Nokogiri::XML::SAX::Document
     case name
     when 'graph' then
       if @in_graph || @in_node || @in_edge
-        puts "lu.rb: invalid structure (graph in graph)!" 
+        puts "lu.rb: invalid structure (graph in graph or node or edge)!" 
         exit false
       end
       @in_graph=true
@@ -293,7 +297,7 @@ class XMLHandler < Nokogiri::XML::SAX::Document
           exit false
         end
         if @in_edge
-          puts "lu.rb: invalid structure (edge in node)!" 
+          puts "lu.rb: invalid structure (node in edge)!" 
           exit false
         end
         @in_node=true
@@ -309,12 +313,12 @@ class XMLHandler < Nokogiri::XML::SAX::Document
           exit false
         end
         if @in_node
-          puts "lu.rb: invalid structure (node in edge)!"
+          puts "lu.rb: invalid structure (edge in node)!" 
           exit false
         end
-        @in_edge=true;
+        @in_edge=true;  
         @e_f=attrs[1].to_i
-        @e_t=attrs[3].to_i
+        @e_t=attrs[3].to_i   
       else
         puts "lu.rb: invalid structure (edge outside graph)!"
         exit false

@@ -9,7 +9,7 @@ begin
     require(g)
   end
 rescue
-  puts "lu.rb: Could not find gem '#{g}!'"
+  puts "\nlu.rb: Could not find gem '#{g}!'"
   exit false
 end
 
@@ -66,20 +66,25 @@ class LUGraph
     end
 
     if opt_branches != opt_t.size
-      puts "Error! O: #{opt_branches} #{opt_t.size}"
+      puts "\nError! O: #{opt_branches} #{opt_t.size}"
       exit
     end
     if mand_branches != mand_t.size
-      puts "Error! M: #{mand_branches} #{mand_t.size}"
+      puts "\nError! M: #{mand_branches} #{mand_t.size}"
       exit
     end
     if (((nr_b == 0) && (opt_branches > 0)) || (nr_b > opt_branches))
-      puts "Error!"
+      puts "\nError!"
       exit
     end
 
     s.print "["
-    @nodes[f].to_smarts(s)
+    if @nodes[f].nil?
+      puts "\nlu.rb: Node '#{f}' not found!"
+      exit false
+    else
+      @nodes[f].to_smarts(s)
+    end
     do_branch=(opt_branches>1)
     if do_branch
       # 1) Uncomment next line to not force at least one branch (c.f. not. 17.11.09)
@@ -92,19 +97,43 @@ class LUGraph
         s.print "$("
 
         s.print "["                   # self
-        @nodes[f].to_smarts(s)         # 
+        if @nodes[f].nil?
+          puts "\nlu.rb: Node '#{f}' not found!"
+          exit false
+        else
+          @nodes[f].to_smarts(s)
+        end
         s.print "]"                   # 
 
         s.print "("                   # branch
-        e.to_smarts(s)                 # 
+        if e.nil?
+          puts "\nlu.rb: Edge not found!"
+          exit false
+        else
+          e.to_smarts(s)                 # 
+        end
         to_smarts(e,f,t,e.weight,0,mode,s)    # recursive: LAST-SMARTS
         s.print ")"                   # 
 
         if backw_n!=f && !backw_e.nil?          # backw
           s.print "(" unless mand_branches==0   #
-          backw_e.to_smarts(s)                   #
+
+          if backw_e.nil?
+            puts "\nlu.rb: Edge not found!"
+            exit false
+          else
+            backw_e.to_smarts(s)                 # 
+          end
+
           s.print "["                           #
-          @nodes[backw_n].to_smarts(s)           #
+
+          if @nodes[backw_n].nil?
+            puts "\nlu.rb: Node '#{f}' not found!"
+            exit false
+          else
+            @nodes[backw_n].to_smarts(s)
+          end
+
           s.print "]"                           #
           s.print ")" unless mand_branches==0   #
         end
@@ -113,7 +142,12 @@ class LUGraph
           s.print "(" unless j==mand_branches-1   #
           mand_e[j].to_smarts(s)                #
           s.print "["                             #
-          @nodes[mand_t[j]].to_smarts(s)           #
+          if @nodes[mand_t[j]].nil?
+            puts "\nlu.rb: Node '#{j}' not found!"
+            exit false
+          else
+            @nodes[mand_t[j]].to_smarts(s)
+          end
           s.print "]"                             #
           s.print ")" unless j==mand_branches-1   #
         end
@@ -132,7 +166,12 @@ class LUGraph
       t = opt_t[0]
       e = opt_e[0]
       s.print "(" unless mand_branches==0
-      e.to_smarts(s)
+      if e.nil?
+        puts "\nlu.rb: Edge not found!"
+        exit false
+      else
+        e.to_smarts(s)
+      end
       to_smarts(e,f,t,e.weight,0,mode,s)
       s.print ")" unless mand_branches==0
     end
@@ -142,7 +181,12 @@ class LUGraph
       t = mand_t[i]
       e = mand_e[i]
       s.print "(" unless i==mand_branches-1
-      e.to_smarts(s)
+      if e.nil?
+        puts "\nlu.rb: Edge not found!"
+        exit false
+      else
+        e.to_smarts(s)
+      end
       to_smarts(e,f,t,e.weight,0,mode,s)
       s.print ")" unless i==mand_branches-1
     end
@@ -201,7 +245,7 @@ class LUEdge
     @aromatic_wc = aromatic_wc
   end
   def to_s
-    puts "'#{@source} #{@target} #{@lab_e} #{@weight} #{@del} #{@opt}'"
+    puts "\n'#{@source} #{@target} #{@lab_e} #{@weight} #{@del} #{@opt}'"
   end
   def to_smarts(s=$stdout)
     l_e = @lab_e.split
@@ -219,7 +263,7 @@ class LUEdge
           s.print ":" 
           aromatized = true
         else 
-          puts "lu.rb: Edge type '#{l_e[i]}' unknown!"
+          puts "\nlu.rb: Edge type unknown!"
           exit false
         end
         s.print "," unless i==l_e.size-1
@@ -238,7 +282,7 @@ class LUEdge
         s.print ":" 
         aromatized = true
       else
-        puts "lu.rb: Edge type '#{l_e[i]}' unknown!"
+        puts "\nlu.rb: Edge type unknown!"
         exit false
       end
       s.print ",:" if @aromatic_wc && !aromatized
@@ -285,7 +329,7 @@ class XMLHandler < Nokogiri::XML::SAX::Document
     case name
     when 'graph' then
       if @in_graph || @in_node || @in_edge
-        puts "lu.rb: invalid structure (graph in graph or node or edge)!" 
+        puts "\nlu.rb: invalid structure (graph in graph or node or edge)!" 
         exit false
       end
       @in_graph=true
@@ -293,34 +337,34 @@ class XMLHandler < Nokogiri::XML::SAX::Document
     when 'node'  then 
       if @in_graph then 
         if @in_node 
-          puts "lu.rb: invalid structure (node in node)!" 
+          puts "\nlu.rb: invalid structure (node in node)!" 
           exit false
         end
         if @in_edge
-          puts "lu.rb: invalid structure (node in edge)!" 
+          puts "\nlu.rb: invalid structure (node in edge)!" 
           exit false
         end
         @in_node=true
         @n_id=attrs[0][1].to_i
       else
-        puts "lu.rb: invalid structure (node outside graph)!" 
+        puts "\nlu.rb: invalid structure (node outside graph)!" 
         exit false
       end # get node id
     when 'edge'  then 
       if @in_graph then 
         if @in_edge
-          puts "lu.rb: invalid structure (edge in edge)!" 
+          puts "\nlu.rb: invalid structure (edge in edge)!" 
           exit false
         end
         if @in_node
-          puts "lu.rb: invalid structure (edge in node)!" 
+          puts "\nlu.rb: invalid structure (edge in node)!" 
           exit false
         end
         @in_edge=true;  
         @e_f=attrs[0][1].to_i
         @e_t=attrs[1][1].to_i   
       else
-        puts "lu.rb: invalid structure (edge outside graph)!" 
+        puts "\nlu.rb: invalid structure (edge outside graph)!" 
         exit false
       end # get edge nodes
     when 'data' then 
@@ -392,7 +436,12 @@ class XMLHandler < Nokogiri::XML::SAX::Document
       @graph_nodes={}
       @graph_edges=Hash.new{ |h,k| h[k]=Hash.new(&h.default_proc) }
     when 'node' then  
-      @graph_nodes[@n_id]=@node 
+      if @graph_nodes[@n_id].nil? 
+        @graph_nodes[@n_id]=@node 
+      else
+        puts "\nlu.rb: Can not insert node '#{@n_id}', since it exists."
+        exit false
+      end
       @in_node=false
       @node=nil  # store away
     when 'edge' then  
@@ -441,7 +490,7 @@ class LU
     c.read_string m, smiles
     p=OpenBabel::OBSmartsPattern.new
     if !p.init(smarts)
-      puts "Error! Smarts pattern invalid."
+      puts "\nError! Smarts pattern invalid."
       exit
     end
 
@@ -450,7 +499,7 @@ class LU
       hits = p.get_umap_list
       print "Found #{hits.size} instances of the SMARTS pattern '#{smarts}' in the SMILES string '#{smiles}'."
       if hits.size>0
-        puts " Here are the atom indices:"
+        puts "\n Here are the atom indices:"
       else
         print "\n"
       end
@@ -593,7 +642,7 @@ class LU
     status = false if match("NN(CC)C(=C)",             "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # no (no)
     status = false unless match("NN(CN)C(=N)",             "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # yes (yes) <- two embeddings is correct
     status = false if match("NN(N)C(=N)",              "[#7][#7;$([#7]([#6][#6])([#7])[#6]),$([#7]([#6])([#7])[#6])][#6;$([#6]([#7])[#7]),$([#6](-,=[#7,#8])[#7])]") # no (no)
-    puts "LAST-UTILS: Tests failed!" unless status
+    puts "\nLAST-UTILS: Tests failed!" unless status
     status
   end
 end

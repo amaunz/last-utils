@@ -1,8 +1,17 @@
-require File.dirname(__FILE__) +  "/lu.rb"
+# Host application for LAST-UTILS, to be called from the command line
+# See http://last-pm.maunz.de
+#
+# Author::    Andreas Maunz (mailto:andreas@maunz.de)
+
+begin 
+  require File.dirname(__FILE__) +  "/lu.rb"
+rescue
+  puts "last-utils.rb: lu.rb not found!"
+  exit false
+end
 
 # Main
 STDOUT.sync = true
-
 
 status=false
 if $*.size<1 || $*.size>4
@@ -30,7 +39,7 @@ when '2'
         lu.match_file($*[1])
     end
 when '3'
-    lu.demo
+    exit lu.ob_test
 else
     status=true
 end
@@ -49,6 +58,6 @@ if status
     puts "           wcb: Enable aromatic wildcarding on bonds."
     puts 
     puts "       cmd=2 : match SMARTS to SMILES file and create LASTPM file."
-    puts "       cmd=3 : demo mode."
+    puts "       cmd=3 : test mode."
     exit
 end

@@ -285,7 +285,7 @@ class XMLHandler < Nokogiri::XML::SAX::Document
         exit false
       end
       @in_graph=true
-      @g_id=attrs[0][1].to_i  # get graph id
+      @g_id=attrs[1].to_i  # get graph id
     when 'node'  then 
       if @in_graph then 
         if @in_node 
@@ -293,7 +293,7 @@ class XMLHandler < Nokogiri::XML::SAX::Document
           exit false
         end
         @in_node=true
-        @n_id=attrs[0][1].to_i
+        @n_id=attrs[1].to_i
       else
         puts "lu.rb: invalid structure (node outside graph)!" 
         exit false
@@ -305,29 +305,29 @@ class XMLHandler < Nokogiri::XML::SAX::Document
           exit false
         end
         @in_edge=true;  
-        @e_f=attrs[0][1].to_i
-        @e_t=attrs[1][1].to_i   
+        @e_f=attrs[1].to_i
+        @e_t=attrs[3].to_i   
       else
         puts "lu.rb: invalid structure (edge outside graph)!" 
         exit false
       end # get edge nodes
     when 'data' then 
-      if @in_graph && attrs[0][1]=='act'   then  
+      if @in_graph && attrs[1]=='act'   then  
         @graph_act=true   
       end # get graph act
-      if @in_graph && attrs[0][1]=='hops'  then  
+      if @in_graph && attrs[1]=='hops'  then  
         @graph_hops=true  
       end  # get graph hops
-      if @in_node && attrs[0][1]=='lab_n'  then  
+      if @in_node && attrs[1]=='lab_n'  then  
         @node_lab=true   
       end # get graph act
-      if @in_edge && attrs[0][1]=='lab_e'  then  
+      if @in_edge && attrs[1]=='lab_e'  then  
         @edge_lab=true    
       end  # get edge elements
-      if @in_edge && attrs[0][1]=='weight' then  
+      if @in_edge && attrs[1]=='weight' then  
         @edge_weight=true 
       end # 
-      if @in_edge && attrs[0][1]=='del'    then  
+      if @in_edge && attrs[1]=='del'    then  
         @edge_del=true    
       end  # 
     end

@@ -286,29 +286,37 @@ class XMLHandler < Nokogiri::XML::SAX::Document
       end
       @in_graph=true
       @g_id=attrs[1].to_i  # get graph id
-    when 'node'  then 
-      if @in_graph then 
-        if @in_node 
-          puts "lu.rb: invalid structure (node in node)!" 
+    when 'node'  then
+      if @in_graph then
+        if @in_node
+          puts "lu.rb: invalid structure (node in node)!"
+          exit false
+        end
+        if @in_edge
+          puts "lu.rb: invalid structure (edge in node)!" 
           exit false
         end
         @in_node=true
         @n_id=attrs[1].to_i
       else
-        puts "lu.rb: invalid structure (node outside graph)!" 
+        puts "lu.rb: invalid structure (node outside graph)!"
         exit false
       end # get node id
-    when 'edge'  then 
-      if @in_graph then 
+    when 'edge'  then
+      if @in_graph then
         if @in_edge
           puts "lu.rb: invalid structure (edge in edge)!" 
           exit false
         end
-        @in_edge=true;  
+        if @in_node
+          puts "lu.rb: invalid structure (node in edge)!"
+          exit false
+        end
+        @in_edge=true;
         @e_f=attrs[1].to_i
-        @e_t=attrs[3].to_i   
+        @e_t=attrs[3].to_i
       else
-        puts "lu.rb: invalid structure (edge outside graph)!" 
+        puts "lu.rb: invalid structure (edge outside graph)!"
         exit false
       end # get edge nodes
     when 'data' then 

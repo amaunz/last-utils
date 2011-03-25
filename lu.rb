@@ -333,6 +333,10 @@ class XMLHandler < Nokogiri::XML::SAX::Document
         exit false
       end
       @in_graph=true
+      if attrs[1].nil?
+        puts "\nlu.rb: Graph id not found!"
+        exit false
+      end
       @g_id=attrs[1].to_i  # get graph id
     when 'node'  then 
       if @in_graph then 
@@ -345,6 +349,10 @@ class XMLHandler < Nokogiri::XML::SAX::Document
           exit false
         end
         @in_node=true
+        if attrs[1].nil?
+          puts "\nlu.rb: Node id not found!"
+          exit false
+        end
         @n_id=attrs[1].to_i
       else
         puts "\nlu.rb: invalid structure (node outside graph)!" 
@@ -361,6 +369,10 @@ class XMLHandler < Nokogiri::XML::SAX::Document
           exit false
         end
         @in_edge=true;  
+        if attrs[1].nil? || attrs[3].nil?
+          puts "\nlu.rb: Node ids in edge not found!"
+          exit false
+        end
         @e_f=attrs[1].to_i
         @e_t=attrs[3].to_i   
       else
@@ -368,6 +380,10 @@ class XMLHandler < Nokogiri::XML::SAX::Document
         exit false
       end # get edge nodes
     when 'data' then 
+      if attrs[1].nil?
+        puts "\nlu.rb: Attributes not found!"
+        exit false
+      end
       if @in_graph && attrs[1]=='act'   then  
         @graph_act=true   
       end # get graph act

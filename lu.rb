@@ -292,6 +292,10 @@ class XMLHandler < Nokogiri::XML::SAX::Document
           puts "lu.rb: invalid structure (node in node)!" 
           exit false
         end
+        if @in_edge
+          puts "lu.rb: invalid structure (edge in node)!" 
+          exit false
+        end
         @in_node=true
         @n_id=attrs[0][1].to_i
       else
@@ -302,6 +306,10 @@ class XMLHandler < Nokogiri::XML::SAX::Document
       if @in_graph then 
         if @in_edge
           puts "lu.rb: invalid structure (edge in edge)!" 
+          exit false
+        end
+        if @in_node
+          puts "lu.rb: invalid structure (node in edge)!" 
           exit false
         end
         @in_edge=true;  

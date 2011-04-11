@@ -475,7 +475,11 @@ class LU
   def read(xml=nil, no_aromatic=false, aromatic_wc=false)
     handler = XMLHandler.new(no_aromatic, aromatic_wc)
     parser = Nokogiri::XML::SAX::Parser.new(handler)
-    parser.parse(STDIN)
+    if ! xml.nil?
+      parser.parse(xml)
+    else
+      parser.parse(STDIN)
+    end
     return {:grps => handler.graphs, :acts => handler.activities, :hops => handler.hops}
   end
 

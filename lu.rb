@@ -326,6 +326,7 @@ class XMLHandler < Nokogiri::XML::SAX::Document
   end
 
   def start_element(name, attrs = [])
+    attrs.flatten!
     case name
     when 'graph' then
       if @in_graph || @in_node || @in_edge

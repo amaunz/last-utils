@@ -504,7 +504,7 @@ class LU
     s.string.split # return array
   end
 
-  def match (smiles, smarts, verbose=true)
+  def match (smiles, smarts, verbose=true, report_counts=false)
     c=OpenBabel::OBConversion.new
     c.set_in_format 'smi'
     m=OpenBabel::OBMol.new
@@ -514,26 +514,30 @@ class LU
       puts "\nError! Smarts pattern invalid."
       exit
     end
+    ret_val = p.match(m, true) if !report_counts # just true/false
 
-    if verbose  
+    if verbose || report_counts
       p.match(m)
       hits = p.get_umap_list
-      print "Found #{hits.size} instances of the SMARTS pattern '#{smarts}' in the SMILES string '#{smiles}'."
-      if hits.size>0
-        puts "\n Here are the atom indices:"
-      else
-        print "\n"
-      end
-      hits.each_with_index do |hit, index|
-        print "  Hit #{index}: [ "
-        hit.each do |atom_index|
-          print "#{atom_index} "
+      if verbose
+        print "Found #{hits.size} instances of the SMARTS pattern '#{smarts}' in the SMILES string '#{smiles}'." 
+        if hits.size>0
+          puts "\n Here are the atom indices:"
+        else
+          print "\n"
         end
-        puts "]"
-      end		
+        hits.each_with_index do |hit, index|
+          print "  Hit #{index}: [ "
+          hit.each do |atom_index|
+            print "#{atom_index} "
+          end
+          puts "]"
+        end		
+      end
+      ret_val = hits.size if report_counts # return hits count
     end
 
-    p.match(m,true)
+    ret_val
   end
 
 

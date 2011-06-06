@@ -541,7 +541,7 @@ class LU
   end
 
 
-  def match_file (file)
+  def match_file (file, nr_hits=false)
     smarts = STDIN.readlines
 
     # build act hash
@@ -565,10 +565,19 @@ class LU
     $stderr.print "Processing smarts... "
     smarts.each do |s|
       result_hash={}
+      hits_hash={}
       string_result=""
 
+      hits=0
       smi_arr.each do |smi|
-        result_hash[smi.split.first] = act_hash[smi.split.first] unless !match(smi.split.last,s.split.last,false)
+        if ! nr_hits
+          result_hash[smi.split.first] = act_hash[smi.split.first] unless !match(smi.split.last,s.split.last,false,nr_hits)
+        else
+          hits = match(smi.split.last,s.split.last,false,nr_hits)
+          result_hash[smi.split.first] = act_hash[smi.split.first] unless hits==0
+          hits_hash[smi.split.first] = hits unless hits==0
+        end
+
         #$stderr.print "#{result_hash.size} "
       end
 
@@ -577,14 +586,14 @@ class LU
 
       result_hash.each do |id, act|
         if act == "1"
-          string_actives << id << " "
+          string_actives << id << "=>" << hits_hash[id].to_s << " "
         elsif act == "0"
-          string_inactives << id << " "
+          string_inactives << id << "=>" << hits_hash[id].to_s << " "
         end
       end
 
       fminer_output=false
-      if ENV['FMINER_LAZAR'].size
+      if ! ENV['FMINER_LAZAR'].nil?
         fminer_output=true
       end
       string_result << "\"" unless fminer_output

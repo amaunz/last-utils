@@ -36,7 +36,8 @@ when '1'
     end
 when '2'
     if !status
-        lu.match_file($*[1])
+        ENV["FMINER_NR_HITS"].nil? ? nr_hits=false : nr_hits=true 
+        lu.match_file($*[1], nr_hits)
     end
 when '3'
     exit lu.ob_test

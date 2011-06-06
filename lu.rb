@@ -586,9 +586,13 @@ class LU
 
       result_hash.each do |id, act|
         if act == "1"
-          string_actives << id << "=>" << hits_hash[id].to_s << " "
+          string_actives << id 
+          string_actives << "=>" << hits_hash[id].to_s if nr_hits
+          string_actives << " "
         elsif act == "0"
-          string_inactives << id << "=>" << hits_hash[id].to_s << " "
+          string_inactives << id 
+          string_inactives << "=>" << hits_hash[id].to_s if nr_hits
+          string_inactives << " "
         end
       end
 

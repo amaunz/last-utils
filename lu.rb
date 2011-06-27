@@ -518,7 +518,7 @@ class LU
 
     if verbose || report_counts
       p.match(m)
-      hits = p.get_umap_list
+      hits = p.get_map_list
       if verbose
         print "Found #{hits.size} instances of the SMARTS pattern '#{smarts}' in the SMILES string '#{smiles}'." 
         if hits.size>0
@@ -617,18 +617,32 @@ class LU
     $stderr.puts
   end
 
-  def match_rb (smiles,smarts) # AM LAST-PM: smiles= array id->smi
-    result={}
+  def match_rb (smiles,smarts,hit_counts) # AM LAST-PM: smiles= array id->smi
+    smarts_matches={}
+    smarts_counts={}
     smarts.each do |s|
-      ids=[]
+      matches=[]
+      counts=[]
       smiles.each_index do |id|
         if (id>1) 
-          ids << id unless !match(smiles[id],s,false)
+          match_res=match(smiles[id],s,hit_counts)
+          if match_res.is_a? TrueClass || match_res.is_a? FalseClass
+            if match_res
+              matches << id 
+              counts << 1
+            end
+          else
+            if match_res>0
+              matches << id
+              counts << match_res
+            end
+          end
         end
       end
-      result[s] = ids
+      smarts_matches[s] = matches
+      smarts_counts[s] = counts
     end
-    result
+    smarts_matches,smarts_counts
   end
 
   def match_rb_hash (smiles,smarts) # AM LAST-PM: smiles= hash id->smi

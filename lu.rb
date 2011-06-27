@@ -504,7 +504,7 @@ class LU
     s.string.split # return array
   end
 
-  def match (smiles, smarts, verbose=true, report_counts=false)
+  def match (smiles, smarts, verbose=true, hit_count=false)
     c=OpenBabel::OBConversion.new
     c.set_in_format 'smi'
     m=OpenBabel::OBMol.new
@@ -514,9 +514,9 @@ class LU
       puts "\nError! Smarts pattern invalid."
       exit
     end
-    ret_val = p.match(m, true) if !report_counts # just true/false
+    ret_val = p.match(m, true) if !hit_count # just true/false
 
-    if verbose || report_counts
+    if verbose || hit_count
       p.match(m)
       hits = p.get_map_list
       if verbose
@@ -534,9 +534,8 @@ class LU
           puts "]"
         end		
       end
-      ret_val = hits.size if report_counts # return hits count
+      ret_val = hits.size if hit_count # return hits count
     end
-
     ret_val
   end
 
@@ -617,7 +616,7 @@ class LU
     $stderr.puts
   end
 
-  def match_rb (smiles,smarts,hit_counts) # AM LAST-PM: smiles= array id->smi
+  def match_rb (smiles,smarts,hit_count=false) # AM LAST-PM: smiles= array id->smi
     smarts_matches={}
     smarts_counts={}
     smarts.each do |s|
@@ -625,8 +624,8 @@ class LU
       counts=[]
       smiles.each_index do |id|
         if (id>1) 
-          match_res=match(smiles[id],s,hit_counts)
-          if match_res.is_a? TrueClass || match_res.is_a? FalseClass
+          match_res=match(smiles[id],s,false,hit_count)
+          if (match_res.is_a? TrueClass) || (match_res.is_a? FalseClass)
             if match_res
               matches << id 
               counts << 1
@@ -642,7 +641,7 @@ class LU
       smarts_matches[s] = matches
       smarts_counts[s] = counts
     end
-    smarts_matches,smarts_counts
+    return smarts_matches, smarts_counts
   end
 
   def match_rb_hash (smiles,smarts) # AM LAST-PM: smiles= hash id->smi

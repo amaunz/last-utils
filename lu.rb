@@ -518,7 +518,7 @@ class LU
 
     if verbose || report_counts
       p.match(m)
-      hits = p.get_umap_list
+      hits = p.get_map_list
       if verbose
         print "Found #{hits.size} instances of the SMARTS pattern '#{smarts}' in the SMILES string '#{smiles}'." 
         if hits.size>0

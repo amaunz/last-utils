@@ -504,7 +504,7 @@ class LU
     s.string.split # return array
   end
 
-  def match (smiles, smarts, verbose=true, report_counts=false)
+  def match (smiles, smarts, verbose=true, hit_count=false)
     c=OpenBabel::OBConversion.new
     c.set_in_format 'smi'
     m=OpenBabel::OBMol.new
@@ -514,11 +514,11 @@ class LU
       puts "\nError! Smarts pattern invalid."
       exit
     end
-    ret_val = p.match(m, true) if !report_counts # just true/false
+    ret_val = p.match(m, true) if !hit_count # just true/false
 
-    if verbose || report_counts
+    if verbose || hit_count
       p.match(m)
-      hits = p.get_umap_list
+      hits = p.get_map_list
       if verbose
         print "Found #{hits.size} instances of the SMARTS pattern '#{smarts}' in the SMILES string '#{smiles}'." 
         if hits.size>0
@@ -534,9 +534,8 @@ class LU
           puts "]"
         end		
       end
-      ret_val = hits.size if report_counts # return hits count
+      ret_val = hits.size if hit_count # return hits count
     end
-
     ret_val
   end
 
@@ -617,18 +616,32 @@ class LU
     $stderr.puts
   end
 
-  def match_rb (smiles,smarts) # AM LAST-PM: smiles= array id->smi
-    result={}
+  def match_rb (smiles,smarts,hit_count=false) # AM LAST-PM: smiles= array id->smi
+    smarts_matches={}
+    smarts_counts={}
     smarts.each do |s|
-      ids=[]
+      matches=[]
+      counts=[]
       smiles.each_index do |id|
         if (id>1) 
-          ids << id unless !match(smiles[id],s,false)
+          match_res=match(smiles[id],s,false,hit_count)
+          if (match_res.is_a? TrueClass) || (match_res.is_a? FalseClass)
+            if match_res
+              matches << id 
+              counts << 1
+            end
+          else
+            if match_res>0
+              matches << id
+              counts << match_res
+            end
+          end
         end
       end
-      result[s] = ids
+      smarts_matches[s] = matches
+      smarts_counts[s] = counts
     end
-    result
+    return smarts_matches, smarts_counts
   end
 
   def match_rb_hash (smiles,smarts) # AM LAST-PM: smiles= hash id->smi

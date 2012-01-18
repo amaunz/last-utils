@@ -8,8 +8,8 @@ Requirements: ruby 1.8 with OpenBabel bindings (see http://openbabel.org/wiki/Ru
 Two modi are available: conversion LAST->SMARTS and instantiation SMARTS/SMILES.
 
 1) Mine LAST descriptors and convert output to SMARTS (see LAST README file how to use the fminer frontend binary for LAST) using cpdbdata (see http://github.com/amaunz/cpdbdata):
-/path/to/fminer -f14 -r /path/to/cpdbdata/salmonella_mutagenicity/salmonella_mutagenicity_alt.smi /path/to/cpdbdata/salmonella_mutagenicity/salmonella_mutagenicity_alt.class | /path/to/last-utils/last-utils.rb 1 "msa" > salm-last.smarts
-
+/path/to/fminer -f14 /path/to/cpdbdata/salmonella_mutagenicity/salmonella_mutagenicity_alt.smi /path/to/cpdbdata/salmonella_mutagenicity/salmonella_mutagenicity_alt.class | ./last-utils.rb 1 "nls" > salm-last.smarts
+Note: This should be called from the current directory.
 Note: Variants 'msa' and 'nls' produce LAST-SMARTS with optional parts of the structures (with recursive SMARTS), while 'nop' disallows optional parts of the structures (ambiguities only on the atom / edge level).
 
 2) Find instantiations of molecules in a .smi file using the last descriptors we just mined:

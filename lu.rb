@@ -619,28 +619,24 @@ class LU
   def match_rb (smiles,smarts,hit_count=false) # AM LAST-PM: smiles= array id->smi
     smarts_matches={}
     smarts_counts={}
-    smarts.each do |s|
-      matches=[]
-      counts=[]
-      smiles.each_index do |id|
-        if (id>1) 
-          match_res=match(smiles[id],s,false,hit_count)
-          if (match_res.is_a? TrueClass) || (match_res.is_a? FalseClass)
-            if match_res
-              matches << id 
-              counts << 1
-            end
-          else
-            if match_res>0
-              matches << id
-              counts << match_res
-            end
+    smarts_mc = smarts.pcollect(4) do |s|
+      (1...smiles.length).to_a.collect do |id|
+        match_res=match(smiles[id],s,false,hit_count)
+        if (match_res.is_a? TrueClass) || (match_res.is_a? FalseClass)
+          if match_res
+            [ id, 1 ]
+          end
+        else
+          if match_res>0
+            [ id, match_res ]
           end
         end
       end
-      smarts_matches[s] = matches
-      smarts_counts[s] = counts
     end
+    smarts.each_index { |idx| 
+      smarts_matches[smarts[idx]] = smarts_mc[idx].collect { |m,c| m }.compact
+      smarts_counts[smarts[idx]] = smarts_mc[idx].collect { |m,c| c }.compact
+    }
     return smarts_matches, smarts_counts
   end
 
@@ -698,3 +694,25 @@ class LU
   end
 end
 
+
+class Array
+  # collect method extended for parallel processing.
+  # Note: assign return value as: ans = arr.pcollect(n) { |obj| ... }
+  # @param n the number of processes to spawn (default: unlimited)
+  def pcollect(n = nil)
+    nproc = 0
+    result = collect do |*a|
+      r, w = IO.pipe
+      fork do
+        r.close
+        w.write( Marshal.dump( yield(*a) ) )
+      end
+      if n and (nproc+=1) >= n
+        Process.wait ; nproc -= 1
+      end
+      [ w.close, r ].last
+    end
+    Process.waitall
+    result.collect{|r| Marshal.load [ r.read, r.close ].first}
+  end
+end

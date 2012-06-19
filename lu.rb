@@ -534,7 +534,7 @@ class LU
           puts "]"
         end		
       end
-      ret_val = hits.size if hit_count # return hits count
+      ret_val = hits.to_a.size if hit_count # return hits count
     end
     ret_val
   end

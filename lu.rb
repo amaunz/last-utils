@@ -544,14 +544,17 @@ class LU
     smarts = STDIN.readlines
 
     # build act hash
-    act_hash={}
-    $stderr.puts "Building activity database..."
-    File.open(file.sub(/.smi/, '.class').sub(/.nob/,'')) do |cfile| # class
-      while (line = cfile.gets)
-        line_arr = line.split
-        act_hash[line_arr.first]=line_arr.last
-      end
-    end   
+    act_file=file.sub(/.smi/, '.class')
+    if File.exists? act_file
+      act_hash={}
+      $stderr.puts "Building activity database..."
+      File.open(act_file) do |cfile| # class
+        while (line = cfile.gets)
+          line_arr = line.split
+          act_hash[line_arr.first]=line_arr.last
+        end
+      end   
+    end
 
     smi_arr=[]
     $stderr.puts "Reading instances..."
@@ -569,11 +572,18 @@ class LU
 
       hits=0
       smi_arr.each do |smi|
+
+        if act_hash
+          activity = act_hash[smi.split.first] 
+        else
+          activity = false
+        end
+
         if ! nr_hits
-          result_hash[smi.split.first] = act_hash[smi.split.first] unless !match(smi.split.last,s.split.last,false,nr_hits)
+          result_hash[smi.split.first] = activity unless !match(smi.split.last,s.split.last,false,nr_hits)
         else
           hits = match(smi.split.last,s.split.last,false,nr_hits)
-          result_hash[smi.split.first] = act_hash[smi.split.first] unless hits==0
+          result_hash[smi.split.first] = activity unless hits==0
           hits_hash[smi.split.first] = hits unless hits==0
         end
 
@@ -582,6 +592,7 @@ class LU
 
       string_actives = " "
       string_inactives = " "
+      string_noact= " "
 
       result_hash.each do |id, act|
         if act == "1"
@@ -592,6 +603,10 @@ class LU
           string_inactives << id 
           string_inactives << "=>" << hits_hash[id].to_s if nr_hits
           string_inactives << " "
+        elsif act == false
+          string_noact << id 
+          string_noact << "=>" << hits_hash[id].to_s if nr_hits
+          string_noact << " "
         end
       end
 
@@ -604,9 +619,14 @@ class LU
       string_result << "\"" unless fminer_output
       string_result << "\t["
       string_actives.chomp!(" ") if fminer_output
-      string_result << string_actives
-      string_result << "] [" unless fminer_output
-      string_result << string_inactives << "]"
+
+      if act_hash
+        string_result << string_actives
+        string_result << "] [" unless fminer_output
+        string_result << string_inactives << "]"
+      else
+        string_result << string_noact << "]"
+      end
 
       puts "#{string_result}"
       nom = string_actives.split.size

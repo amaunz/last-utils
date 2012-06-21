@@ -5,15 +5,13 @@
 # Author::    Andreas Maunz (mailto:andreas@maunz.de)
 
 begin 
-  for g in [ "openbabel", "set", "yaml", "pp", "rubygems", "nokogiri"]
+  for g in [ "openbabel", "set", "yaml", "pp", "rubygems", "nokogiri", "threadify"]
     require(g)
   end
-rescue
-  puts "\nlu.rb: Could not find gem '#{g}!'"
+rescue Exception => e
+  puts "\nlu.rb: Could not find gem '#{g}'! Install it first using '(sudo) gem install #{g}'"
   exit false
 end
-
-
 
 # Represents a Graph
 # Contains nodes and edges, where the labels can be multimaps
@@ -639,7 +637,7 @@ class LU
   def match_rb (smiles,smarts,hit_count=false) # AM LAST-PM: smiles= array id->smi
     smarts_matches={}
     smarts_counts={}
-    smarts_mc = smarts.pcollect(4) do |s|
+    smarts_mc = smarts.threadify(4) do |s|
       (1...smiles.length).to_a.collect do |id|
         match_res=match(smiles[id],s,false,hit_count)
         if (match_res.is_a? TrueClass) || (match_res.is_a? FalseClass)
@@ -714,25 +712,3 @@ class LU
   end
 end
 
-
-class Array
-  # collect method extended for parallel processing.
-  # Note: assign return value as: ans = arr.pcollect(n) { |obj| ... }
-  # @param n the number of processes to spawn (default: unlimited)
-  def pcollect(n = nil)
-    nproc = 0
-    result = collect do |*a|
-      r, w = IO.pipe
-      fork do
-        r.close
-        w.write( Marshal.dump( yield(*a) ) )
-      end
-      if n and (nproc+=1) >= n
-        Process.wait ; nproc -= 1
-      end
-      [ w.close, r ].last
-    end
-    Process.waitall
-    result.collect{|r| Marshal.load [ r.read, r.close ].first}
-  end
-end

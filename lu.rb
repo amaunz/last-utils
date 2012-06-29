@@ -5,11 +5,11 @@
 # Author::    Andreas Maunz (mailto:andreas@maunz.de)
 
 begin 
-  for g in [ "openbabel", "set", "yaml", "pp", "rubygems", "nokogiri", "threadify"]
+  for g in [ "openbabel", "set", "yaml", "pp", "rubygems", "nokogiri"]
     require(g)
   end
 rescue Exception => e
-  puts "\nlu.rb: Could not find gem '#{g}'! Install it first using '(sudo) gem install #{g}'"
+  puts "\nlu.rb: Could not find gem or extension '#{g}'! Install it first, e.g. using '(sudo) gem install #{g}'"
   exit false
 end
 
@@ -637,7 +637,7 @@ class LU
   def match_rb (smiles,smarts,hit_count=false) # AM LAST-PM: smiles= array id->smi
     smarts_matches={}
     smarts_counts={}
-    smarts_mc = smarts.threadify(4) do |s|
+    smarts_mc = smarts.collect do |s|
       (1...smiles.length).to_a.collect do |id|
         match_res=match(smiles[id],s,false,hit_count)
         if (match_res.is_a? TrueClass) || (match_res.is_a? FalseClass)

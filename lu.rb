@@ -634,18 +634,21 @@ class LU
     $stderr.puts
   end
 
-  def match_rb (smiles,smarts,hit_count=false) # AM LAST-PM: smiles= array id->smi
+  def match_rb (smiles,smarts,hit_count=false,placeholders=false) # AM LAST-PM: smiles= array id->smi
     smarts_matches={}
     smarts_counts={}
+    unused_smiles=(1...smiles.length).to_a
     smarts_mc = smarts.collect do |s|
       (1...smiles.length).to_a.collect do |id|
         match_res=match(smiles[id],s,false,hit_count)
         if (match_res.is_a? TrueClass) || (match_res.is_a? FalseClass)
           if match_res
+            unused_smiles.delete(id)
             [ id, 1 ]
           end
         else
           if match_res>0
+            unused_smiles.delete(id)
             [ id, match_res ]
           end
         end
@@ -655,6 +658,10 @@ class LU
       smarts_matches[smarts[idx]] = smarts_mc[idx].collect { |m,c| m }.compact
       smarts_counts[smarts[idx]] = smarts_mc[idx].collect { |m,c| c }.compact
     }
+    if (placeholders) 
+      smarts_matches[smarts.last] += unused_smiles
+      smarts_counts[smarts.last] += Array.new(unused_smiles.length, 0)
+    end
     return smarts_matches, smarts_counts
   end
 

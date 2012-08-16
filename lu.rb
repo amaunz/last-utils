@@ -634,10 +634,26 @@ class LU
     $stderr.puts
   end
 
+  # Match SMARTS on SMILES
+  # Positions corresponding to SMILES start at 1, never at 0, in in- and output.
+  # @param Array SMILES strings, starting with pos 1 and *a nil entry* on pos 0
+  # @param Array SMARTS strings, starting with pos 0
+  # @param Boolean Whether matches per molecule should be counted
+  # @param Boolean Whether placeholders (zero-entries) should be inserted for non-matched SMILES
+  # @return Array of Hash of arrays with pos's of matched SMILES (by SMARTS),
+  #                  Hash of arrays with corresponding match counts (by SMARTS),
+  #                  Array of pos's with pos's of matched SMILES (in total).
   def match_rb (smiles,smarts,hit_count=false,placeholders=false) # AM LAST-PM: smiles= array id->smi
+    unless smiles[0].nil?
+      puts "Error: Smiles format invalid"
+      return nil
+    end
     smarts_matches={}
     smarts_counts={}
     unused_smiles=(1...smiles.length).to_a
+
+    # smarts_mc is 3-nested array indexed by smarts pos
+    # each pos array of pairs of smiles ids and match counts
     smarts_mc = smarts.collect do |s|
       (1...smiles.length).to_a.collect do |id|
         match_res=match(smiles[id],s,false,hit_count)
@@ -654,15 +670,25 @@ class LU
         end
       end
     end
+
+    # Unpack smarts_mc to hashes of matches and counts
+    # hash values are arrays w corresponding positions
     smarts.each_index { |idx| 
       smarts_matches[smarts[idx]] = smarts_mc[idx].collect { |m,c| m }.compact
       smarts_counts[smarts[idx]] = smarts_mc[idx].collect { |m,c| c }.compact
     }
+
+    # Insert placeholders on last SMARTS, if appropriate
     if (placeholders) 
       smarts_matches[smarts.last] += unused_smiles
       smarts_counts[smarts.last] += Array.new(unused_smiles.length, 0)
+      unused_smiles = []
     end
-    return smarts_matches, smarts_counts
+
+    # Get pos's of used smiles
+    used_smiles = (1...smiles.length).to_a - unused_smiles
+
+    return smarts_matches, smarts_counts, used_smiles
   end
 
   def match_rb_hash (smiles,smarts) # AM LAST-PM: smiles= hash id->smi
